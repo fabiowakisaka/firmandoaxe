@@ -28,9 +28,9 @@ jobs:
           key: ${{ runner.os }}-pip-gspread
 
       - name: Instalar dependências
-        run: pip install gspread google-auth
+        run: pip install -r backend/requirements.txt
 
       - name: Rodar manutenção
         env:
-          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          GOOGLE_SA_KEY: ${{ secrets.GOOGLE_SA_KEY }}
         run: python backend/expire_oferendas.py
