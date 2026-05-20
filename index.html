@@ -13,7 +13,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Crimson+Pro:ital,wght=0,300;0,400;0,600;1,300;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 
 <style>
-/* ─── PALETA E ESTILO CUSTOMIZADO DE MATRIZ AFRICANA ─── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
   --bg:        #080705;
@@ -33,7 +32,7 @@ body {
   overflow-x: hidden;
   min-height: 100vh;
   display: flex;
-  flex-col: column;
+  flex-direction: column;
 }
 
 .cinzel { font-family: 'Cinzel Decorative', serif; }
@@ -44,7 +43,6 @@ header {
   border-bottom: 1px solid var(--border);
   padding: 1.5rem;
   text-align: center;
-  position: relative;
 }
 header h1 { color: var(--gold); font-size: 1.6rem; letter-spacing: 2px; }
 header p { font-size: 0.85rem; color: var(--text-dim); margin-top: 0.2rem; }
@@ -60,10 +58,9 @@ header p { font-size: 0.85rem; color: var(--text-dim); margin-top: 0.2rem; }
   flex-grow: 1;
 }
 @media (min-width: 900px) {
-  .app-container { grid-template-columns: 450px 1fr; }
+  .app-container { grid-template-columns: 420px 1fr; }
 }
 
-/* Painel Lateral */
 .painel {
   background: var(--bg2);
   border: 1px solid var(--border);
@@ -82,6 +79,7 @@ header p { font-size: 0.85rem; color: var(--text-dim); margin-top: 0.2rem; }
   font-size: 0.9rem;
   border-left: 3px solid var(--gold);
   color: var(--text-dim);
+  line-height: 1.4;
 }
 
 textarea {
@@ -97,7 +95,6 @@ textarea {
 }
 textarea:focus { outline: 1px solid var(--gold); }
 
-/* Seletores de Tipo em Tempo Real */
 .categorias-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -136,28 +133,21 @@ textarea:focus { outline: 1px solid var(--gold); }
 .btn-firmar:hover { opacity: 0.9; }
 .btn-firmar:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* Wrapper do Mapa */
 .mapa-wrapper {
   background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 0.5rem;
-  position: relative;
-  min-height: 400px;
+  min-height: 450px;
 }
 #map {
   width: 100%;
   height: 100%;
-  min-height: 450px;
+  min-height: 500px;
   border-radius: 12px;
   background: #111;
 }
 
-/* customização sutil dos popups do mapa */
-.leaflet-popup-content-wrapper { background: var(--bg2); color: var(--white); border: 1px solid var(--border); }
-.leaflet-popup-tip { background: var(--bg2); }
-
-/* Tela de Sucesso / Compartilhamento */
 .sucesso-box {
   background: var(--bg3);
   border: 1px solid var(--gold);
@@ -200,16 +190,15 @@ textarea:focus { outline: 1px solid var(--gold); }
 <div class="app-container">
   
   <aside class="painel" id="painel-fluxo">
-    
-    <div class="fluxo-edicao" id="fluxo-dados">
+    <div id="fluxo-dados">
       <h2 class="cinzel" style="color: var(--gold); font-size: 1.2rem; margin-bottom: 0.5rem;">Prepare seu Axé</h2>
       
-      <div class="instrucoes mb-3" id="status-passo">
-        📍 <b>Passo 1:</b> Escolha o local da oferenda clicando diretamente no mapa.
+      <div class="instrucoes" id="status-passo" style="margin-bottom: 1rem;">
+        📍 <b>Passo 1:</b> Navegue pelo mapa e dê um clique no local exato onde deseja firmar sua oferenda virtual.
       </div>
 
       <div style="margin-bottom: 1rem;">
-        <label class="mono" style="font-size: 0.75rem; color: var(--gold); display:block; margin-bottom: 0.4rem;">1. ESCOLHA A VERTENTE (Altera o ícone no mapa)</label>
+        <label class="mono" style="font-size: 0.75rem; color: var(--gold); display:block; margin-bottom: 0.4rem;">1. SELECIONE A VERTENTE (Muda o ícone ao vivo)</label>
         <div class="categorias-grid">
           <div class="cat-btn active" data-cat="caminhos">🌾 Caminhos</div>
           <div class="cat-btn" data-cat="saude">🌿 Saúde</div>
@@ -221,15 +210,14 @@ textarea:focus { outline: 1px solid var(--gold); }
       </div>
 
       <div>
-        <label class="mono" style="font-size: 0.75rem; color: var(--gold); display:block; margin-bottom: 0.4rem;">2. DIGITE SUA INTENÇÃO COM FÉ</label>
-        <textarea id="pedido-texto" rows="5" placeholder="Digite sua prece ou necessidade... Os guias lerão seu coração."></textarea>
+        <label class="mono" style="font-size: 0.75rem; color: var(--gold); display:block; margin-bottom: 0.4rem;">2. DIGITE SUA INTENÇÃO</label>
+        <textarea id="pedido-texto" rows="4" placeholder="Escreva sua prece de coração... Os guias conhecem sua verdade."></textarea>
       </div>
     </div>
 
-    <div id="acao-container">
-      <button class="btn-firmar" id="btn-acao-principal" disabled>Aguardando Localização...</button>
+    <div id="acao-container" style="margin-top: 1rem;">
+      <button class="btn-firmar" id="btn-acao-principal" disabled>Aguardando clique no mapa...</button>
     </div>
-
   </aside>
 
   <main class="mapa-wrapper">
@@ -239,151 +227,121 @@ textarea:focus { outline: 1px solid var(--gold); }
 </div>
 
 <script>
-// ─── CONFIGURAÇÃO DE AMBIENTE ───
+// Ajuste estas variáveis quando configurar seu Worker e Planilha reais
 const CONFIG = {
-  WORKER_URL: "https://oferenda-digital-api.SEU_SUBDOMINIO.workers.dev",
-  SHEET_ID: "SUA_PLANILHA_ID_AQUI"
+  WORKER_URL: "https://oferenda-digital-api.seu-subdominio.workers.dev",
+  SHEET_ID: "SEU_SHEET_ID_AQUI"
 };
 
-// Emojis/Ícones mapeados por tipo de oferenda
 const ICONES_MAPA = {
-  caminhos: '🌾',
-  saude: '🌿',
-  protecao: '🛡️',
-  prosperidade: '🪙',
-  amor: '🌹',
-  gratidao: '✨',
-  preview: '📍'
+  caminhos: '🌾', saude: '🌿', protecao: '🛡️', prosperidade: '🪙', amor: '🌹', gratidao: '✨'
 };
 
-// ─── ESTADO GLOBAL DO FRONTEND ───
 let mapa = null;
-let markerPreview = null; // O pino provisório que o usuário posiciona
+let markerPreview = null;
 let categoriaSelecionada = "caminhos";
 let coordenadasSelecionadas = null;
 
-// ─── INICIALIZAÇÃO ───
-document.addEventListener("DOMContentLoaded", () => {
-  inicializarMapa();
-  configurarEventosInterface();
-  checarParametrosCompartilhamento();
-});
-
-// ─── MOTOR DO MAPA LEAFLET ───
 function inicializarMapa() {
-  // Inicializa mapa padrão centrado no Brasil
+  // Centralizado no Brasil por padrão
   mapa = L.map('map', { zoomControl: false }).setView([-14.2350, -51.9253], 4);
   L.control.zoom({ position: 'bottomright' }).addTo(mapa);
 
-  // Layout de Mapa Escuro (CartoDB DarkMatter) para casar com a identidade imersiva do projeto
+  // Mapa com tema Dark escuro e imersivo
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     maxZoom: 19,
     attribution: '&copy; OpenStreetMap &copy; CARTO'
   }).addTo(mapa);
 
-  // Tenta geolocalizar o celular do usuário para aproximar a visão inicial
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(pos => {
       mapa.setView([pos.coords.latitude, pos.coords.longitude], 14);
     });
   }
 
-  // EVENTO DE CLIQUE NO MAPA: Captura a posição desejada pelo visitante
+  // Captura o clique do usuário no mapa
   mapa.on('click', (e) => {
     const { lat, lng } = e.latlng;
     coordenadasSelecionadas = { lat, lng };
-    
-    atualizarPinoPreview();
-    atualizarBotaoEstado("pronto");
+    atualizarPinoAoVivo();
+    definirBotaoEstado("pronto");
   });
 }
 
-// ─── ATUALIZAÇÃO DO PINO EM TEMPO REAL ───
-function atualizarPinoPreview() {
+function atualizarPinoAoVivo() {
   if (!coordenadasSelecionadas) return;
-
-  const emojiIcon = ICONES_MAPA[categoriaSelecionada] || '📍';
+  const emoji = ICONES_MAPA[categoriaSelecionada] || '📍';
   
-  // Cria um ícone HTML customizado e renderiza o emoji da vertente selecionada
   const customIcon = L.divIcon({
-    html: `<div style="font-size: 28px; filter: drop-shadow(0 0 6px rgba(212,168,50,0.6)); text-align:center;">${emojiIcon}</div>`,
-    className: 'custom-pin-preview',
+    html: `<div style="font-size: 30px; filter: drop-shadow(0 0 6px #d4a832); text-align:center;">${emoji}</div>`,
+    className: 'custom-pin',
     iconSize: [32, 32],
     iconAnchor: [16, 32]
   });
 
   if (markerPreview) {
-    // Se o marcador já existia no mapa, apenas move de lugar e atualiza o emoji na hora
     markerPreview.setLatLng([coordenadasSelecionadas.lat, coordenadasSelecionadas.lng]);
     markerPreview.setIcon(customIcon);
   } else {
-    // Se for o primeiro clique, plota o marcador no mapa
     markerPreview = L.marker([coordenadasSelecionadas.lat, coordenadasSelecionadas.lng], { icon: customIcon }).addTo(mapa);
   }
-
-  // Faz o mapa se mover levemente de forma suave até a posição do clique
   mapa.panTo([coordenadasSelecionadas.lat, coordenadasSelecionadas.lng]);
 }
 
-// ─── CONFIGURAÇÃO DE EVENTOS DA INTERFACE ───
-function configurarEventosInterface() {
-  // Cliques para alternar as vertentes de categoria
+function configurarEventos() {
   document.querySelectorAll(".cat-btn").forEach(btn => {
     btn.addEventListener("click", (e) => {
       document.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("active"));
       e.target.classList.add("active");
-      
       categoriaSelecionada = e.target.getAttribute("data-cat");
-      
-      // Atualiza o ícone do mapa dinamicamente se o usuário já tiver clicado no mapa
-      atualizarPinoPreview();
+      atualizarPinoAoVivo(); // Muda o ícone na hora se o pino já estiver no mapa
     });
   });
 
-  // Clique no botão principal de Firmar
-  document.getElementById("btn-acao-principal").addEventListener("click", executarFluxoEnvio);
+  document.getElementById("btn-acao-principal").addEventListener("click", enviarOferenda);
 }
 
-// ─── MANIPULAÇÃO DO BOTÃO PRINCIPAL ───
-function atualizarBotaoEstado(estado) {
+function definirBotaoEstado(estado) {
   const btn = document.getElementById("btn-acao-principal");
   const instrucoes = document.getElementById("status-passo");
 
   if (estado === "pronto") {
     btn.disabled = false;
     btn.innerHTML = "Firmar Oferenda Virtual 🔥";
-    instrucoes.innerHTML = "✨ <b>Local Definido!</b> Agora escreva sua intenção de coração e clique no botão abaixo.";
-    instrucoes.style.borderLeftColor = "#22c55e"; // Borda verde de validação
+    instrucoes.innerHTML = "✨ <b>Local escolhido!</b> Agora descreva seu pedido com fé e clique no botão vermelho abaixo.";
+    instrucoes.style.borderLeftColor = "#22c55e";
   } else if (estado === "enviando") {
     btn.disabled = true;
     btn.innerHTML = "Consultando os Guias... 🕯️";
   }
 }
 
-// ─── ENVIO DOS DADOS PARA O WORKER / RITUAL IA ───
-async function executarFluxoEnvio() {
+async function enviarOferenda() {
   const texto = document.getElementById("pedido-texto").value.trim();
   if (!texto) {
-    alert("Por favor, digite sua intenção antes de firmar o axé.");
+    alert("Por favor, digite sua intenção antes de firmar.");
     return;
   }
 
-  atualizarBotaoEstado("enviando");
+  definirBotaoEstado("enviando");
+
+  const idFalso = crypto.randomUUID();
+  const mockTextoRitual = `Sua oferenda virtual de ${categoriaSelecionada.toUpperCase()} foi firmada com sucesso no plano astral. Que os guias tragam as respostas e o axé necessário para sua jornada.`;
+  const mockElementos = `Vela correspondente à linha, fluidos espirituais e elementos da natureza em formato digital.`;
 
   try {
-    // 1. Envia para o Cloudflare Worker processar via Gemini API
-    const resIA = await fetch(`${CONFIG.WORKER_URL}/classificar`, {
+    // Tenta enviar para o Worker real
+    const res = await fetch(`${CONFIG.WORKER_URL}/classificar`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ texto })
     });
-
-    const resultado = await resIA.json();
-
+    
+    const resultado = await res.json();
+    
     if (resultado.aprovado) {
-      // 2. Monta objeto no padrão exato da aba "oferendas" do Sheets
       const novaOferenda = {
-        id: crypto.randomUUID(),
+        id: idFalso,
         data_criacao: new Date().toISOString(),
         intencao: texto,
         tipo_oferenda: resultado.categoria || categoriaSelecionada,
@@ -392,3 +350,86 @@ async function executarFluxoEnvio() {
         texto_ritual: resultado.texto_ritual,
         elementos: resultado.elementos,
         status_ativa: 1
+      };
+
+      await fetch(`${CONFIG.WORKER_URL}/salvar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(novaOferenda)
+      });
+
+      exibirSucesso(idFalso, resultado.texto_ritual, resultado.elementos);
+    } else {
+      alert(resultado.texto_ritual || "Pedido não aceito.");
+      window.location.href = `praticantes.html?motivo=recusa`;
+    }
+
+  } catch (err) {
+    // MODO DE SEGURANÇA: Se o Worker der erro por não estar configurado, roda localmente para você ver o funcionamento visual
+    console.log("Worker não configurado ainda. Rodando modo demonstrativo local.");
+    exibirSucesso(idFalso, mockTextoRitual, mockElementos);
+  }
+}
+
+function exibirSucesso(id, ritual, elementos) {
+  const urlShare = `${window.location.origin}${window.location.pathname}?id=${id}`;
+  markerPreview.bindPopup(`<b>Axé Firmado!</b><br>${ritual}`).openPopup();
+  markerPreview = null;
+
+  document.getElementById("painel-fluxo").innerHTML = `
+    <div class="sucesso-box">
+      <h3 class="cinzel" style="color: var(--gold); margin-bottom: 0.5rem;">Axé Firmado! ✨</h3>
+      <p style="font-size: 0.95rem; margin-bottom: 1rem; line-height: 1.4;">${ritual}</p>
+      <p style="font-size: 0.8rem; color: var(--text-dim); font-style: italic;">Elementos digitais: ${elementos}</p>
+      
+      <div style="margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1rem; text-align: left;">
+        <label class="mono" style="font-size: 0.7rem; color: var(--gold); display:block; margin-bottom: 0.3rem;">LINK DA OFERENDA (COMPARTILHAMENTO):</label>
+        <div class="share-input-group">
+          <input type="text" class="share-url" value="${urlShare}" id="share-input" readonly>
+          <button class="btn-copy" onclick="copiarLink()">Copiar</button>
+        </div>
+      </div>
+      <button class="btn-firmar" style="margin-top: 1.5rem; background: var(--bg3); border: 1px solid var(--border);" onclick="window.location.reload()">Firmar Outra</button>
+    </div>
+  `;
+}
+
+function copiarLink() {
+  const input = document.getElementById("share-input");
+  input.select();
+  document.execCommand("copy");
+  alert("Link de compartilhamento copiado com sucesso!");
+}
+
+async function checarLinkCompartilhado() {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+  if (!id) return;
+
+  document.getElementById("status-passo").innerHTML = "🔮 <b>Carregando oferenda compartilhada via link...</b>";
+
+  try {
+    const res = await fetch(`${CONFIG.WORKER_URL}/buscar-oferenda?id=${id}`);
+    const d = await res.json();
+    if (d && d.latitude) {
+      const lat = parseFloat(d.latitude);
+      const lng = parseFloat(d.longitude);
+      mapa.setView([lat, lng], 16);
+      L.marker([lat, lng], {
+        icon: L.divIcon({ html: `<div style="font-size:32px;">${ICONES_MAPA[d.tipo_oferenda] || '✨'}</div>`, iconSize:[32,32] })
+      }).addTo(mapa).bindPopup(`<b>Oferenda Compartilhada</b><br>"${d.intencao}"<br><small>${d.texto_ritual}</small>`).openPopup();
+    }
+  } catch(e) {
+    // Fallback de teste se o link veio mas não há Worker
+    document.getElementById("status-passo").innerHTML = "ℹ️ Você acessou via link compartilhado. Modo de demonstração ativo.";
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  inicializarMapa();
+  configurarEventos();
+  checarLinkCompartilhado();
+});
+</script>
+</body>
+</html>
