@@ -1,0 +1,21 @@
+# wrangler.toml — Cloudflare Worker: Oferenda Digital
+# Deploy: wrangler deploy
+# Secrets: wrangler secret put NOME
+
+name = "oferenda-digital-api"
+main = "worker.js"
+compatibility_date = "2024-09-23"
+
+# Rota do worker (ativar após conectar domínio no Cloudflare)
+# routes = [
+#   { pattern = "api.seudominio.com.br/*", zone_name = "seudominio.com.br" }
+# ]
+
+[vars]
+ALLOWED_ORIGIN = "https://seuusuario.github.io"
+
+# Secrets (NÃO colocar aqui — usar: wrangler secret put NOME)
+# GEMINI_API_KEY
+# GOOGLE_SA_EMAIL
+# GOOGLE_SA_PRIVATE_KEY
+# SHEET_ID
