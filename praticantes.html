@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Portal do Praticante — Oferenda Digital</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:#080705; --bg2:#100e0b; --bg3:#1a1712; --bg4:#221e18;
+  --border:rgba(255,220,130,0.10); --border2:rgba(255,220,130,0.22);
+  --gold:#d4a832; --gold2:#f0c84a; --gold-dim:rgba(212,168,50,0.12);
+  --red2:#e05a40; --white:#f0ead8; --muted:#7a7060; --text:#e8dfc8;
+  --font-head:'Cinzel Decorative',serif;
+  --font-body:'Crimson Pro',serif;
+  --font-mono:'Space Mono',monospace;
+  --radius:12px;
+}
+html { scroll-behavior: smooth; }
+body { background:var(--bg); color:var(--text); font-family:var(--font-body); font-size:16px; line-height:1.6; min-height:100vh; overflow-x:hidden; }
+body::before { content:''; position:fixed; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E"); pointer-events:none; z-index:9999; opacity:.5; }
+
+.nav { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--border); }
+.nav-logo { font-family:var(--font-head); font-size:13px; color:var(--gold2); text-decoration:none; letter-spacing:.05em; }
+.nav-back { font-size:12px; color:var(--muted); text-decoration:none; font-family:var(--font-mono); transition:color .2s; }
+.nav-back:hover { color:var(--gold); }
+
+.container { max-width:560px; margin:0 auto; padding:0 16px 80px; }
+
+/* TABS */
+.tabs { display:flex; gap:0; margin:24px 0 20px; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+.tab-btn { flex:1; background:transparent; border:none; color:var(--muted); font-family:var(--font-body); font-size:14px; padding:12px; cursor:pointer; transition:all .2s; border-right:1px solid var(--border); }
+.tab-btn:last-child { border-right:none; }
+.tab-btn.active { background:var(--gold-dim); color:var(--gold2); }
+.tab-pane { display:none; }
+.tab-pane.active { display:block; animation:fadeIn .3s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+/* CARDS */
+.card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:14px; position:relative; overflow:hidden; }
+.card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--gold),transparent); opacity:.35; }
+.card-title { font-family:var(--font-head); font-size:12px; color:var(--gold); letter-spacing:.08em; margin-bottom:14px; }
+.section-label { font-family:var(--font-mono); font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
+
+/* FORM FIELDS */
+.field { margin-bottom:14px; }
+.field label { display:block; font-size:12px; color:var(--muted); font-family:var(--font-mono); letter-spacing:.05em; margin-bottom:5px; }
+.field input, .field textarea, .field select {
+  width:100%; background:var(--bg3); border:1px solid var(--border);
+  border-radius:8px; color:var(--text); font-family:var(--font-body);
+  font-size:15px; padding:11px 14px; outline:none;
+  transition:border-color .2s, box-shadow .2s;
+  appearance:none;
+}
+.field input:focus, .field textarea:focus, .field select:focus {
+  border-color:var(--gold); box-shadow:0 0 0 3px rgba(212,168,50,.08);
+}
+.field textarea { resize:none; min-height:90px; }
+.field select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a7060' stroke-width='1.5' fill='none'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; padding-right:36px; cursor:pointer; }
+.field select option { background:var(--bg3); }
+
+.field-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+/* ESPECIALIDADES */
+.espec-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:6px; }
+.espec-check { display:none; }
+.espec-label {
+  display:block; background:var(--bg3); border:1px solid var(--border);
+  border-radius:8px; padding:8px 12px; font-size:13px; cursor:pointer;
+  transition:all .2s; color:var(--muted); text-align:center;
+}
+.espec-check:checked + .espec-label {
+  background:var(--gold-dim); border-color:rgba(212,168,50,.35); color:var(--gold2);
+}
+
+/* PLANOS */
+.planos-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px; }
+.plano-card { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:14px 10px; text-align:center; cursor:pointer; transition:all .2s; position:relative; }
+.plano-card:hover { border-color:var(--border2); }
+.plano-card.selected { border-color:var(--gold); background:var(--gold-dim); }
+.plano-card.popular::before { content:'popular'; position:absolute; top:-9px; left:50%; transform:translateX(-50%); background:var(--gold); color:#0a0800; font-family:var(--font-mono); font-size:9px; padding:2px 8px; border-radius:4px; font-weight:700; letter-spacing:.05em; }
+.plano-nome { font-family:var(--font-mono); font-size:10px; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; margin-bottom:6px; }
+.plano-preco { font-family:var(--font-head); font-size:16px; color:var(--gold2); margin-bottom:4px; }
+.plano-sub { font-size:11px; color:var(--muted); line-height:1.5; }
+
+/* BENEFÍCIOS */
+.beneficio { display:flex; gap:8px; align-items:flex-start; margin:7px 0; font-size:13px; color:var(--muted); }
+.beneficio .ok { color:var(--gold); flex-shrink:0; }
+.beneficio .no { opacity:.3; flex-shrink:0; }
+
+/* BOTÃO */
+.btn-primary { width:100%; background:linear-gradient(135deg,#c49a20 0%,#8a6a10 100%); border:none; border-radius:var(--radius); color:#0a0800; font-family:var(--font-head); font-size:13px; letter-spacing:.05em; padding:15px; cursor:pointer; transition:all .2s; position:relative; overflow:hidden; margin-top:6px; }
+.btn-primary::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,#f0c84a 0%,#c49a20 100%); opacity:0; transition:opacity .2s; }
+.btn-primary:hover::before { opacity:1; }
+.btn-primary span { position:relative; z-index:1; }
+.btn-secondary { width:100%; background:transparent; border:1px solid var(--border2); border-radius:var(--radius); color:var(--gold); font-family:var(--font-body); font-size:14px; font-style:italic; padding:13px; cursor:pointer; transition:all .2s; margin-top:8px; }
+.btn-secondary:hover { background:var(--gold-dim); }
+
+/* DASHBOARD */
+.stat-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:14px; }
+.stat-box { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:14px; text-align:center; }
+.stat-num { font-family:var(--font-head); font-size:22px; color:var(--gold2); margin-bottom:2px; }
+.stat-lbl { font-family:var(--font-mono); font-size:9px; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; }
+
+.lead-card { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:8px; display:flex; gap:12px; align-items:center; }
+.lead-icon { font-size:22px; flex-shrink:0; }
+.lead-body { flex:1; min-width:0; }
+.lead-tipo { font-family:var(--font-mono); font-size:10px; color:var(--gold); letter-spacing:.05em; margin-bottom:2px; }
+.lead-texto { font-size:13px; color:var(--muted); font-style:italic; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.lead-dist { font-size:11px; color:var(--muted); margin-top:4px; }
+.lead-btn { background:var(--gold-dim); border:1px solid rgba(212,168,50,.2); border-radius:6px; color:var(--gold); font-size:11px; font-family:var(--font-mono); padding:5px 10px; cursor:pointer; white-space:nowrap; transition:background .2s; flex-shrink:0; }
+.lead-btn:hover { background:rgba(212,168,50,.22); }
+
+.stars-row { display:flex; gap:8px; align-items:center; margin-bottom:12px; }
+.star { font-size:24px; cursor:pointer; transition:transform .15s; filter:grayscale(1) opacity(.3); }
+.star.lit { filter:none; }
+.star:hover { transform:scale(1.2); }
+
+.avaliacao-card { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:8px; }
+.avaliacao-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+.avaliacao-stars { color:var(--gold); font-size:14px; }
+.avaliacao-data { font-family:var(--font-mono); font-size:10px; color:var(--muted); }
+.avaliacao-txt { font-size:13px; color:var(--muted); font-style:italic; }
+
+.badge-plano { display:inline-block; background:var(--gold-dim); border:1px solid rgba(212,168,50,.25); border-radius:4px; padding:2px 8px; font-family:var(--font-mono); font-size:10px; color:var(--gold); margin-left:8px; }
+
+.progress-bar { background:var(--bg3); border-radius:4px; height:6px; margin-top:6px; overflow:hidden; }
+.progress-fill { height:100%; background:linear-gradient(90deg,var(--gold),var(--gold2)); border-radius:4px; transition:width .4s ease; }
+
+@media (max-width:400px) {
+  .planos-grid { grid-template-columns:1fr; }
+  .field-row { grid-template-columns:1fr; }
+  .espec-grid { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="index.html" class="nav-back">← Voltar ao mapa</a>
+  <a href="index.html" class="nav-logo">Oferenda Digital</a>
+  <div style="width:80px"></div>
+</nav>
+
+<div class="container">
+
+  <div style="text-align:center;padding:24px 0 8px;">
+    <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:.3em;color:var(--gold);margin-bottom:8px;opacity:.8;">PORTAL DO PRATICANTE</div>
+    <div style="font-family:var(--font-head);font-size:20px;color:var(--gold2);text-shadow:0 0 30px rgba(212,168,50,.3);">Seu espaço sagrado digital</div>
+    <div style="font-size:14px;color:var(--muted);font-style:italic;margin-top:6px;">Cadastre-se, defina seu perfil e receba clientes da sua região</div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('cadastro')">Cadastro</button>
+    <button class="tab-btn" onclick="switchTab('planos')">Planos</button>
+    <button class="tab-btn" onclick="switchTab('painel')">Painel</button>
+    <button class="tab-btn" onclick="switchTab('avaliacoes')">Avaliações</button>
+  </div>
+
+  <!-- ── CADASTRO ── -->
+  <div class="tab-pane active" id="tab-cadastro">
+
+    <div class="card">
+      <div class="card-title">Dados pessoais</div>
+
+      <div class="field">
+        <label>Nome espiritual / Nome público</label>
+        <input type="text" placeholder="Ex: Mãe Zélia de Oxum">
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Tradição</label>
+          <select>
+            <option value="">Selecione...</option>
+            <option>Umbanda</option>
+            <option>Candomblé</option>
+            <option>Quimbanda</option>
+            <option>Espiritismo Kardecista</option>
+            <option>Outra</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Tempo de prática</label>
+          <select>
+            <option value="">Selecione...</option>
+            <option>1–5 anos</option>
+            <option>5–10 anos</option>
+            <option>10–20 anos</option>
+            <option>Mais de 20 anos</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Apresentação (aparece no perfil público)</label>
+        <textarea placeholder="Fale sobre sua trajetória, sua tradição e como você pode ajudar..."></textarea>
+      </div>
+
+      <div class="field">
+        <label>WhatsApp para contato</label>
+        <input type="tel" placeholder="+55 (11) 99999-0000">
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Cidade</label>
+          <input type="text" placeholder="São Paulo">
+        </div>
+        <div class="field">
+          <label>Raio de atendimento (km)</label>
+          <select>
+            <option>5 km</option>
+            <option>10 km</option>
+            <option selected>20 km</option>
+            <option>50 km</option>
+            <option>Todo o Brasil (online)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Especialidades</div>
+      <div class="espec-grid">
+        <div><input type="checkbox" class="espec-check" id="e1"><label class="espec-label" for="e1">🔮 Consulta de Búzios</label></div>
+        <div><input type="checkbox" class="espec-check" id="e2"><label class="espec-label" for="e2">🃏 Jogo de Cartas</label></div>
+        <div><input type="checkbox" class="espec-check" id="e3"><label class="espec-label" for="e3">🌿 Limpeza Espiritual</label></div>
+        <div><input type="checkbox" class="espec-check" id="e4"><label class="espec-label" for="e4">⚗️ Descarrego</label></div>
+        <div><input type="checkbox" class="espec-check" id="e5"><label class="espec-label" for="e5">🕯️ Trabalhos de Vela</label></div>
+        <div><input type="checkbox" class="espec-check" id="e6"><label class="espec-label" for="e6">💨 Defumação</label></div>
+        <div><input type="checkbox" class="espec-check" id="e7"><label class="espec-label" for="e7">🛤️ Abertura de Caminhos</label></div>
+        <div><input type="checkbox" class="espec-check" id="e8"><label class="espec-label" for="e8">🌊 Oferenda ao Mar</label></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Disponibilidade</div>
+      <div class="field">
+        <label>Atende online?</label>
+        <select>
+          <option>Sim, presencial e online</option>
+          <option>Somente presencial</option>
+          <option>Somente online</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Dias e horários (resumo)</label>
+        <input type="text" placeholder="Ex: Seg a Sex, 9h–18h · Sáb, 9h–13h">
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="switchTab('planos')"><span>Continuar → Escolher Plano</span></button>
+
+  </div>
+
+  <!-- ── PLANOS ── -->
+  <div class="tab-pane" id="tab-planos">
+
+    <div class="card">
+      <div class="card-title">Escolha seu plano</div>
+
+      <div class="planos-grid">
+        <div class="plano-card" onclick="selecionarPlano(this,'basico')">
+          <div class="plano-nome">Básico</div>
+          <div class="plano-preco">R$29<span style="font-size:11px;font-family:var(--font-mono)">/mês</span></div>
+          <div class="plano-sub">Visibilidade no mapa</div>
+        </div>
+        <div class="plano-card popular selected" onclick="selecionarPlano(this,'padrao')">
+          <div class="plano-nome">Padrão</div>
+          <div class="plano-preco">R$49<span style="font-size:11px;font-family:var(--font-mono)">/mês</span></div>
+          <div class="plano-sub">+ Leads negados</div>
+        </div>
+        <div class="plano-card" onclick="selecionarPlano(this,'destaque')">
+          <div class="plano-nome">Destaque</div>
+          <div class="plano-preco">R$79<span style="font-size:11px;font-family:var(--font-mono)">/mês</span></div>
+          <div class="plano-sub">Topo do ranking</div>
+        </div>
+      </div>
+
+      <div id="beneficios-basico" class="beneficios" style="display:none;">
+        <div class="beneficio"><span class="ok">✦</span> Perfil público no mapa</div>
+        <div class="beneficio"><span class="ok">✦</span> Até 10 avaliações exibidas</div>
+        <div class="beneficio"><span class="no">✦</span><span style="opacity:.35"> Leads de pedidos negados</span></div>
+        <div class="beneficio"><span class="no">✦</span><span style="opacity:.35"> Badge "Verificado"</span></div>
+        <div class="beneficio"><span class="no">✦</span><span style="opacity:.35"> Destaque no mapa</span></div>
+      </div>
+
+      <div id="beneficios-padrao" class="beneficios">
+        <div class="beneficio"><span class="ok">✦</span> Perfil público no mapa</div>
+        <div class="beneficio"><span class="ok">✦</span> Avaliações ilimitadas exibidas</div>
+        <div class="beneficio"><span class="ok">✦</span> Leads de pedidos negados na região</div>
+        <div class="beneficio"><span class="ok">✦</span> Notificação por e-mail de novos leads</div>
+        <div class="beneficio"><span class="no">✦</span><span style="opacity:.35"> Badge "Verificado" + destaque no mapa</span></div>
+      </div>
+
+      <div id="beneficios-destaque" class="beneficios" style="display:none;">
+        <div class="beneficio"><span class="ok">✦</span> Tudo do plano Padrão</div>
+        <div class="beneficio"><span class="ok">✦</span> Badge "Verificado" no perfil</div>
+        <div class="beneficio"><span class="ok">✦</span> Destaque visual no mapa (ícone maior)</div>
+        <div class="beneficio"><span class="ok">✦</span> Prioridade no ranking regional</div>
+        <div class="beneficio"><span class="ok">✦</span> Notificação instantânea de pedidos próximos</div>
+      </div>
+    </div>
+
+    <div class="card" style="background:linear-gradient(135deg,rgba(212,168,50,.05),var(--bg2));">
+      <div style="font-size:13px;color:var(--muted);font-style:italic;line-height:1.8;">
+        Pagamento seguro via <strong style="color:var(--text)">Stripe</strong> · Cancele quando quiser · Sem fidelidade
+      </div>
+    </div>
+
+    <button class="btn-primary"><span>✦ Assinar e Publicar Perfil</span></button>
+    <button class="btn-secondary" onclick="switchTab('cadastro')">← Voltar ao cadastro</button>
+
+  </div>
+
+  <!-- ── PAINEL ── -->
+  <div class="tab-pane" id="tab-painel">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div>
+        <div style="font-size:16px;font-weight:600;">Mãe Zélia de Oxum</div>
+        <div style="font-size:12px;color:var(--muted);">Umbanda · São Paulo <span class="badge-plano">padrão</span></div>
+      </div>
+      <div style="font-size:32px;">🌸</div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stat-grid">
+      <div class="stat-box">
+        <div class="stat-num">4.9</div>
+        <div class="stat-lbl">Nota média</div>
+        <div style="color:var(--gold);font-size:13px;margin-top:4px;">★★★★★</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num">23</div>
+        <div class="stat-lbl">Avaliações</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">+3 este mês</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num">41</div>
+        <div class="stat-lbl">Leads recebidos</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">este mês</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num">12</div>
+        <div class="stat-lbl">Convertidos</div>
+        <div style="font-size:11px;color:var(--gold);margin-top:4px;">29% conversão</div>
+      </div>
+    </div>
+
+    <!-- Ranking -->
+    <div class="card">
+      <div class="section-label">Posição no ranking regional</div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="font-family:var(--font-head);font-size:32px;color:var(--gold2);">#2</div>
+        <div style="flex:1">
+          <div style="font-size:13px;color:var(--text);margin-bottom:6px;">São Paulo · Umbanda</div>
+          <div class="progress-bar"><div class="progress-fill" style="width:82%"></div></div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">82 pts · 18 pts para o 1º lugar</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Leads recentes -->
+    <div class="card">
+      <div class="section-label">Leads recentes na sua região</div>
+
+      <div class="lead-card">
+        <div class="lead-icon">💔</div>
+        <div class="lead-body">
+          <div class="lead-tipo">Pedido negado · Amor</div>
+          <div class="lead-texto">"Quero reconquistar minha ex sem que ela..."</div>
+          <div class="lead-dist">📍 1.8km · há 12 min</div>
+        </div>
+        <button class="lead-btn">Contatar</button>
+      </div>
+
+      <div class="lead-card">
+        <div class="lead-icon">😤</div>
+        <div class="lead-body">
+          <div class="lead-tipo">Pedido negado · Vingança</div>
+          <div class="lead-texto">"Preciso que meu vizinho pague pelo que fez..."</div>
+          <div class="lead-dist">📍 3.2km · há 34 min</div>
+        </div>
+        <button class="lead-btn">Contatar</button>
+      </div>
+
+      <div class="lead-card">
+        <div class="lead-icon">😰</div>
+        <div class="lead-body">
+          <div class="lead-tipo">Pedido negado · Amarração</div>
+          <div class="lead-texto">"Quero amarrar meu marido para ele não..."</div>
+          <div class="lead-dist">📍 4.1km · há 1h</div>
+        </div>
+        <button class="lead-btn">Contatar</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── AVALIAÇÕES ── -->
+  <div class="tab-pane" id="tab-avaliacoes">
+
+    <!-- Dar avaliação -->
+    <div class="card">
+      <div class="card-title">Avaliar atendimento recebido</div>
+      <div style="font-size:14px;color:var(--muted);font-style:italic;margin-bottom:14px;">
+        Você foi atendido por um praticante? Deixe sua avaliação para ajudar a comunidade.
+      </div>
+
+      <div class="field">
+        <label>Praticante</label>
+        <select>
+          <option value="">Selecione quem te atendeu...</option>
+          <option>Mãe Zélia de Oxum</option>
+          <option>Pai João de Ogum</option>
+          <option>Mãe Sandra de Iemanjá</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Sua nota</label>
+        <div class="stars-row" id="stars-row">
+          <span class="star" data-n="1" onclick="votarEstrela(1)">★</span>
+          <span class="star" data-n="2" onclick="votarEstrela(2)">★</span>
+          <span class="star" data-n="3" onclick="votarEstrela(3)">★</span>
+          <span class="star" data-n="4" onclick="votarEstrela(4)">★</span>
+          <span class="star" data-n="5" onclick="votarEstrela(5)">★</span>
+          <span style="font-size:13px;color:var(--muted);font-family:var(--font-mono);margin-left:4px;" id="stars-label">Toque para avaliar</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Comentário (opcional)</label>
+        <textarea placeholder="Como foi o atendimento? O seu pedido foi atendido? (Sem mencionar detalhes íntimos)"></textarea>
+      </div>
+
+      <button class="btn-primary"><span>Enviar Avaliação</span></button>
+    </div>
+
+    <!-- Avaliações recentes -->
+    <div style="margin-top:20px;">
+      <div class="section-label">Avaliações recentes — Mãe Zélia de Oxum</div>
+
+      <div class="avaliacao-card">
+        <div class="avaliacao-header">
+          <div class="avaliacao-stars">★★★★★</div>
+          <div class="avaliacao-data">há 2 dias</div>
+        </div>
+        <div class="avaliacao-txt">"Atendimento incrível, muito acolhedora e precisa. Recomendo muito."</div>
+      </div>
+
+      <div class="avaliacao-card">
+        <div class="avaliacao-header">
+          <div class="avaliacao-stars">★★★★★</div>
+          <div class="avaliacao-data">há 5 dias</div>
+        </div>
+        <div class="avaliacao-txt">"Mãe Zélia me ajudou em um momento muito difícil. Gratidão eterna."</div>
+      </div>
+
+      <div class="avaliacao-card">
+        <div class="avaliacao-header">
+          <div class="avaliacao-stars">★★★★☆</div>
+          <div class="avaliacao-data">há 1 semana</div>
+        </div>
+        <div class="avaliacao-txt">"Muito respeitosa e sábia. O atendimento online funcionou muito bem."</div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+function switchTab(nome) {
+  document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+  document.getElementById("tab-" + nome).classList.add("active");
+  const btns = document.querySelectorAll(".tab-btn");
+  const mapa = { cadastro:0, planos:1, painel:2, avaliacoes:3 };
+  btns[mapa[nome]]?.classList.add("active");
+}
+
+function selecionarPlano(el, plano) {
+  document.querySelectorAll(".plano-card").forEach(c => c.classList.remove("selected"));
+  el.classList.add("selected");
+  document.querySelectorAll(".beneficios").forEach(b => b.style.display = "none");
+  document.getElementById("beneficios-" + plano).style.display = "block";
+}
+
+let notaAtual = 0;
+function votarEstrela(n) {
+  notaAtual = n;
+  const labels = ["", "Ruim", "Regular", "Bom", "Muito bom", "Excelente!"];
+  document.querySelectorAll(".star").forEach((s, i) => {
+    s.classList.toggle("lit", i < n);
+  });
+  document.getElementById("stars-label").textContent = labels[n];
+}
+</script>
+</body>
+</html>

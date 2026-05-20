@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Oferenda Digital — Macumba Virtual</title>
+<meta name="description" content="Faça sua oferenda virtual com respeito às tradições de Umbanda e Candomblé. Pedidos analisados por IA.">
+
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- Fontes -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+/* ─── RESET & VARS ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #080705;
+  --bg2:       #100e0b;
+  --bg3:       #1a1712;
+  --bg4:       #221e18;
+  --border:    rgba(255,220,130,0.10);
+  --border2:   rgba(255,220,130,0.22);
+  --gold:      #d4a832;
+  --gold2:     #f0c84a;
+  --gold-dim:  rgba(212,168,50,0.15);
+  --red:       #b03a2e;
+  --red2:      #e05a40;
+  --white:     #f0ead8;
+  --muted:     #7a7060;
+  --text:      #e8dfc8;
+  --font-head: 'Cinzel Decorative', serif;
+  --font-body: 'Crimson Pro', serif;
+  --font-mono: 'Space Mono', monospace;
+  --radius:    12px;
+  --glow:      0 0 24px rgba(212,168,50,0.18);
+  --glow2:     0 0 40px rgba(212,168,50,0.28);
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── GRAIN OVERLAY ─── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: .5;
+}
+
+/* ─── HEADER ─── */
+.header {
+  text-align: center;
+  padding: 48px 24px 24px;
+  position: relative;
+}
+.header::after {
+  content: '';
+  display: block;
+  width: 120px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  margin: 20px auto 0;
+}
+
+.header-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 12px;
+  opacity: .8;
+}
+.header h1 {
+  font-family: var(--font-head);
+  font-size: clamp(22px, 6vw, 38px);
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: var(--gold2);
+  text-shadow: 0 0 40px rgba(212,168,50,0.4), 0 2px 0 rgba(0,0,0,.8);
+  line-height: 1.2;
+}
+.header-sub {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--muted);
+  margin-top: 10px;
+  font-weight: 300;
+}
+
+/* ─── CANDLES DECO ─── */
+.candle-row {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin: 0 0 32px;
+}
+.candle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+.flame {
+  width: 8px;
+  height: 14px;
+  background: radial-gradient(ellipse at 50% 80%, #fff 0%, #ffdd44 40%, #ff8800 80%, transparent 100%);
+  border-radius: 50% 50% 20% 20%;
+  animation: flicker 1.8s ease-in-out infinite alternate;
+  filter: blur(.4px);
+}
+.candle-body {
+  width: 10px;
+  height: 28px;
+  border-radius: 2px;
+  position: relative;
+}
+.candle-body::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(255,255,255,.1) 0%, transparent 40%);
+}
+.c1 .candle-body { background: linear-gradient(180deg, #cc3322 0%, #882211 100%); }
+.c2 .candle-body { background: linear-gradient(180deg, #e8e0c8 0%, #b0a890 100%); }
+.c3 .candle-body { background: linear-gradient(180deg, #224488 0%, #112244 100%); }
+.c4 .candle-body { background: linear-gradient(180deg, #e8e0c8 0%, #b0a890 100%); }
+.c5 .candle-body { background: linear-gradient(180deg, #cc3322 0%, #882211 100%); }
+
+.c1 .flame { animation-delay: 0s; }
+.c2 .flame { animation-delay: .3s; }
+.c3 .flame { animation-delay: .6s; }
+.c4 .flame { animation-delay: .9s; }
+.c5 .flame { animation-delay: .2s; }
+
+@keyframes flicker {
+  0%   { transform: scaleX(1) scaleY(1) translateX(0); opacity: 1; }
+  25%  { transform: scaleX(.85) scaleY(1.1) translateX(1px); opacity: .9; }
+  50%  { transform: scaleX(1.1) scaleY(.9) translateX(-1px); opacity: 1; }
+  75%  { transform: scaleX(.9) scaleY(1.05) translateX(.5px); opacity: .95; }
+  100% { transform: scaleX(1.05) scaleY(.95) translateX(0); opacity: 1; }
+}
+
+/* ─── MAIN LAYOUT ─── */
+.main {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0 16px 80px;
+}
+
+/* ─── CARD ─── */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  opacity: .4;
+}
+
+.card-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 12px;
+  opacity: .7;
+}
+
+/* ─── TEXTAREA ─── */
+.pedido-area {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  padding: 14px 16px;
+  resize: none;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+  min-height: 100px;
+}
+.pedido-area::placeholder {
+  color: var(--muted);
+  font-style: italic;
+}
+.pedido-area:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(212,168,50,0.08);
+}
+
+.char-count {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  text-align: right;
+  margin-top: 6px;
+}
+
+/* ─── TIPOS GRID ─── */
+.tipos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.tipo-btn {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 6px;
+  cursor: pointer;
+  text-align: center;
+  transition: all .2s;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 13px;
+}
+.tipo-btn:hover { border-color: var(--border2); color: var(--text); }
+.tipo-btn.active {
+  border-color: var(--gold);
+  background: var(--gold-dim);
+  color: var(--gold2);
+}
+.tipo-btn .tipo-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+.tipo-btn .tipo-name { font-size: 11px; line-height: 1.3; }
+
+/* ─── BOTÃO PRINCIPAL ─── */
+.btn-oferenda {
+  width: 100%;
+  background: linear-gradient(135deg, #c49a20 0%, #8a6a10 100%);
+  border: none;
+  border-radius: var(--radius);
+  color: #0a0800;
+  font-family: var(--font-head);
+  font-size: 14px;
+  letter-spacing: .05em;
+  padding: 16px;
+  cursor: pointer;
+  transition: all .2s;
+  position: relative;
+  overflow: hidden;
+}
+.btn-oferenda::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #f0c84a 0%, #c49a20 100%);
+  opacity: 0;
+  transition: opacity .2s;
+}
+.btn-oferenda:hover::before { opacity: 1; }
+.btn-oferenda:active { transform: scale(.98); }
+.btn-oferenda span { position: relative; z-index: 1; }
+.btn-oferenda:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+/* ─── LOADING ─── */
+.loading-overlay {
+  display: none;
+  text-align: center;
+  padding: 24px;
+}
+.loading-overlay.active { display: block; }
+.loading-text {
+  font-family: var(--font-body);
+  font-style: italic;
+  color: var(--gold);
+  font-size: 15px;
+  animation: pulse 2s ease-in-out infinite;
+}
+.loading-dots span {
+  display: inline-block;
+  width: 6px; height: 6px;
+  background: var(--gold);
+  border-radius: 50%;
+  margin: 0 3px;
+  animation: dots 1.4s ease-in-out infinite;
+}
+.loading-dots span:nth-child(2) { animation-delay: .2s; }
+.loading-dots span:nth-child(3) { animation-delay: .4s; }
+@keyframes dots {
+  0%, 80%, 100% { transform: scale(.6); opacity: .4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+@keyframes pulse { 0%,100% { opacity: .7; } 50% { opacity: 1; } }
+
+/* ─── RESULTADO APROVADO ─── */
+.resultado {
+  display: none;
+  animation: fadeInUp .4s ease;
+}
+.resultado.active { display: block; }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.oferenda-visual {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 12px;
+  text-align: center;
+  position: relative;
+}
+.oferenda-visual::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  background: radial-gradient(ellipse at 50% 0%, rgba(212,168,50,.06) 0%, transparent 70%);
+}
+
+.prato {
+  font-size: 52px;
+  line-height: 1;
+  margin-bottom: 12px;
+  filter: drop-shadow(0 4px 12px rgba(212,168,50,.3));
+}
+.orixas-nome {
+  font-family: var(--font-head);
+  font-size: 13px;
+  color: var(--gold2);
+  letter-spacing: .1em;
+  margin-bottom: 8px;
+}
+.texto-ritual {
+  font-style: italic;
+  font-size: 15px;
+  color: var(--text);
+  line-height: 1.7;
+  font-weight: 300;
+}
+.elementos-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 14px;
+}
+.elemento-tag {
+  background: var(--gold-dim);
+  border: 1px solid rgba(212,168,50,.2);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 12px;
+  color: var(--gold2);
+  font-family: var(--font-mono);
+}
+
+.expira-info {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 10px;
+  letter-spacing: .05em;
+}
+
+/* ─── RESULTADO NEGADO ─── */
+.negado-card {
+  background: linear-gradient(135deg, rgba(176,58,46,.08) 0%, var(--bg2) 100%);
+  border: 1px solid rgba(176,58,46,.25);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 12px;
+}
+.negado-title {
+  font-family: var(--font-head);
+  font-size: 13px;
+  color: var(--red2);
+  margin-bottom: 10px;
+  letter-spacing: .05em;
+}
+.negado-msg {
+  font-style: italic;
+  font-size: 15px;
+  color: var(--text);
+  line-height: 1.7;
+  font-weight: 300;
+}
+
+/* ─── PRATICANTES ─── */
+.praticantes-section {
+  display: none;
+}
+.praticantes-section.active { display: block; }
+
+.praticante-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  transition: border-color .2s;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
+.praticante-card:hover { border-color: var(--border2); }
+
+.praticante-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--bg4), var(--bg2));
+  border: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.praticante-info { flex: 1; min-width: 0; }
+.praticante-nome {
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.praticante-tipo {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.praticante-stars {
+  color: var(--gold);
+  font-size: 13px;
+  letter-spacing: .1em;
+}
+.praticante-dist {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.praticante-badge {
+  background: var(--gold-dim);
+  border: 1px solid rgba(212,168,50,.2);
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-size: 10px;
+  color: var(--gold);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+
+/* ─── AFILIADOS ─── */
+.afiliados-section { display: none; }
+.afiliados-section.active { display: block; }
+
+.afiliados-title {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.afiliados-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.afiliado-item {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .2s;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+.afiliado-item:hover { border-color: var(--border2); transform: translateY(-2px); }
+.afiliado-icon { font-size: 24px; margin-bottom: 6px; }
+.afiliado-name { font-size: 11px; color: var(--muted); line-height: 1.3; }
+.afiliado-price {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--gold);
+  margin-top: 4px;
+}
+
+/* ─── MAPA ─── */
+.mapa-section { margin-bottom: 16px; }
+.mapa-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mapa-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--red2);
+  animation: blink 1.5s ease-in-out infinite;
+}
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+
+#mapa {
+  height: 280px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+/* Leaflet dark override */
+.leaflet-tile { filter: invert(1) hue-rotate(180deg) brightness(.75) contrast(1.1) saturate(.8); }
+.leaflet-container { background: var(--bg) !important; }
+.leaflet-popup-content-wrapper {
+  background: var(--bg2) !important;
+  border: 1px solid var(--border2) !important;
+  border-radius: 10px !important;
+  box-shadow: var(--glow2) !important;
+  color: var(--text) !important;
+}
+.leaflet-popup-tip { background: var(--bg2) !important; }
+.leaflet-popup-close-button { color: var(--muted) !important; }
+.leaflet-control-zoom a {
+  background: var(--bg2) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+/* ─── NOVA OFERENDA BTN ─── */
+.btn-nova {
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--gold);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-style: italic;
+  padding: 14px;
+  cursor: pointer;
+  transition: all .2s;
+  margin-top: 10px;
+}
+.btn-nova:hover { background: var(--gold-dim); border-color: var(--gold); }
+
+/* ─── FOOTER ─── */
+.footer {
+  text-align: center;
+  padding: 24px;
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+  border-top: 1px solid var(--border);
+}
+.footer a { color: var(--muted); text-decoration: none; }
+.footer a:hover { color: var(--gold); }
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 4px; }
+
+/* ─── MOBILE ADJUSTMENTS ─── */
+@media (max-width: 400px) {
+  .tipos-grid { grid-template-columns: repeat(2, 1fr); }
+  .afiliados-grid { grid-template-columns: repeat(2, 1fr); }
+  .header h1 { font-size: 20px; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-eyebrow">Tradição · Respeito · Axé</div>
+  <h1>Oferenda Digital</h1>
+  <p class="header-sub">Macumba virtual com respeito às tradições de Umbanda e Candomblé</p>
+</header>
+
+<!-- VELAS -->
+<div class="candle-row" aria-hidden="true">
+  <div class="candle c1"><div class="flame"></div><div class="candle-body"></div></div>
+  <div class="candle c2"><div class="flame"></div><div class="candle-body"></div></div>
+  <div class="candle c3"><div class="flame"></div><div class="candle-body"></div></div>
+  <div class="candle c4"><div class="flame"></div><div class="candle-body"></div></div>
+  <div class="candle c5"><div class="flame"></div><div class="candle-body"></div></div>
+</div>
+
+<!-- MAPA -->
+<div class="main">
+  <div class="mapa-section">
+    <div class="mapa-label">
+      <span class="mapa-dot"></span>
+      Oferendas ativas no mapa
+    </div>
+    <div id="mapa"></div>
+  </div>
+
+  <!-- FORMULÁRIO -->
+  <div class="card" id="form-card">
+    <div class="card-label">Faça sua oferenda</div>
+
+    <!-- Tipos de pedido -->
+    <div class="tipos-grid" id="tipos-grid">
+      <button class="tipo-btn" data-tipo="caminhos" onclick="selecionarTipo(this)">
+        <span class="tipo-icon">🛤️</span>
+        <span class="tipo-name">Abertura de Caminhos</span>
+      </button>
+      <button class="tipo-btn" data-tipo="saude" onclick="selecionarTipo(this)">
+        <span class="tipo-icon">🌿</span>
+        <span class="tipo-name">Saúde e Cura</span>
+      </button>
+      <button class="tipo-btn" data-tipo="amor" onclick="selecionarTipo(this)">
+        <span class="tipo-icon">🌹</span>
+        <span class="tipo-name">Amor</span>
+      </button>
+      <button class="tipo-btn" data-tipo="prosperidade" onclick="selecionarTipo(this)">
+        <span class="tipo-icon">🌻</span>
+        <span class="tipo-name">Prosperidade</span>
+      </button>
+      <button class="tipo-btn" data-tipo="protecao" onclick="selecionarTipo(this)">
+        <span class="tipo-icon">🛡️</span>
+        <span class="tipo-name">Proteção</span>
+      </button>
+      <button class="tipo-btn" data-tipo="gratidao" onclick="selecionarTipo(this)">
+        <span class="tipo-icon">🙏</span>
+        <span class="tipo-name">Gratidão</span>
+      </button>
+    </div>
+
+    <textarea
+      class="pedido-area"
+      id="pedido-texto"
+      maxlength="300"
+      placeholder="Escreva seu pedido com sinceridade e respeito... (ex: Peço proteção para minha família e abertura de novos caminhos profissionais)"
+      oninput="atualizarContador(this)"
+    ></textarea>
+    <div class="char-count"><span id="char-n">0</span>/300</div>
+
+    <button class="btn-oferenda" id="btn-enviar" onclick="enviarPedido()" style="margin-top:14px;">
+      <span>🕯️ Fazer Oferenda</span>
+    </button>
+  </div>
+
+  <!-- LOADING -->
+  <div class="loading-overlay" id="loading">
+    <div class="loading-text">Os guias estão analisando seu pedido...</div>
+    <div class="loading-dots" style="margin-top:12px;">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+
+  <!-- RESULTADO APROVADO -->
+  <div class="resultado" id="resultado-aprovado">
+    <div class="oferenda-visual" id="oferenda-visual">
+      <div class="prato" id="prato-emoji">🍽️</div>
+      <div class="orixas-nome" id="orixas-nome"></div>
+      <div class="texto-ritual" id="texto-ritual"></div>
+      <div class="elementos-lista" id="elementos-lista"></div>
+      <div class="expira-info">✦ Sua oferenda ficará no mapa por 72 horas ✦</div>
+    </div>
+
+    <!-- Afiliados -->
+    <div class="afiliados-section active" id="afiliados-section">
+      <div class="afiliados-title">✦ Faça também no mundo físico</div>
+      <div class="afiliados-grid" id="afiliados-grid"></div>
+    </div>
+
+    <button class="btn-nova" onclick="novoPedido()">+ Fazer nova oferenda</button>
+  </div>
+
+  <!-- RESULTADO NEGADO -->
+  <div class="resultado" id="resultado-negado">
+    <div class="negado-card">
+      <div class="negado-title">A espiritualidade não apoia este pedido</div>
+      <div class="negado-msg" id="negado-msg"></div>
+    </div>
+
+    <!-- Praticantes -->
+    <div class="praticantes-section active" id="praticantes-section">
+      <div class="card-label" style="margin-bottom:10px;">Profissionais espirituais na sua região</div>
+      <div id="praticantes-lista"></div>
+    </div>
+
+    <button class="btn-nova" onclick="novoPedido()">+ Fazer outro pedido</button>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <p>Feito com respeito às tradições de matriz africana · <a href="#">Cadastre-se como praticante</a></p>
+  <p style="margin-top:6px;font-size:11px;">Axé para todos ✦</p>
+</footer>
+
+<script>
+// ─── CONFIGURAÇÃO ───────────────────────────────────────────
+const CONFIG = {
+  WORKER_URL:  "https://SEU-WORKER.workers.dev",  // Cloudflare Worker
+  SHEET_ID:    "SEU_SHEET_ID_AQUI",
+  GID_OFERENDAS: "0"
+};
+
+// ─── DADOS DE TIPOS ─────────────────────────────────────────
+const TIPOS = {
+  caminhos:    { emoji: "🍽️", cor: "#c97b3a", orixas: "Exu e Pombagira", elementos: ["🍿 Pipoca","🫒 Dendê","🕯️ Vela vermelha","🪙 Moedas"], afiliados: ["vela-vermelha","pipoca","dende"] },
+  saude:       { emoji: "🌿", cor: "#3B8BD4", orixas: "Oxalá e Omulu",    elementos: ["🕯️ Vela branca","💧 Água","🌿 Ervas medicinais"], afiliados: ["vela-branca","ervas","quartinha"] },
+  amor:        { emoji: "🌹", cor: "#D4537E", orixas: "Oxum",             elementos: ["🌹 Rosas","🕯️ Vela rosa","🍯 Mel"], afiliados: ["vela-rosa","rosas","mel"] },
+  prosperidade:{ emoji: "🌻", cor: "#639922", orixas: "Ogum e Oxóssi",    elementos: ["🍯 Mel","🪙 Moedas","🕯️ Vela amarela","🌻 Girassol"], afiliados: ["vela-amarela","mel","moedas"] },
+  protecao:    { emoji: "🛡️", cor: "#534AB7", orixas: "Ogum",             elementos: ["🧂 Sal grosso","🕯️ Vela preta","🌿 Defumador"], afiliados: ["vela-preta","sal-grosso","defumador"] },
+  gratidao:    { emoji: "🙏", cor: "#BA7517", orixas: "Oxalá",            elementos: ["🕯️ Vela branca","🌸 Flores brancas","💧 Água"], afiliados: ["vela-branca","flores","quartinha"] }
+};
+
+// Afiliados mockados (substituir por links reais Shopee/ML)
+const AFILIADOS = {
+  "vela-vermelha": { icon: "🕯️", nome: "Vela Vermelha 7 Dias", preco: "R$ 4,90", link: "#" },
+  "vela-branca":   { icon: "🕯️", nome: "Vela Branca 7 Dias",   preco: "R$ 4,90", link: "#" },
+  "vela-rosa":     { icon: "🕯️", nome: "Vela Rosa 7 Dias",     preco: "R$ 4,90", link: "#" },
+  "vela-amarela":  { icon: "🕯️", nome: "Vela Amarela 7 Dias",  preco: "R$ 4,90", link: "#" },
+  "vela-preta":    { icon: "🕯️", nome: "Vela Preta 7 Dias",    preco: "R$ 4,90", link: "#" },
+  "pipoca":        { icon: "🍿", nome: "Pipoca p/ Oferenda",    preco: "R$ 3,50", link: "#" },
+  "dende":         { icon: "🫒", nome: "Azeite de Dendê",       preco: "R$ 8,90", link: "#" },
+  "ervas":         { icon: "🌿", nome: "Kit de Ervas Sagradas", preco: "R$ 12,90", link: "#" },
+  "mel":           { icon: "🍯", nome: "Mel Puro Oferenda",     preco: "R$ 9,90", link: "#" },
+  "defumador":     { icon: "💨", nome: "Defumador Sagrado",     preco: "R$ 7,90", link: "#" },
+  "rosas":         { icon: "🌹", nome: "Rosas p/ Oferenda",     preco: "R$ 11,90", link: "#" },
+  "flores":        { icon: "🌸", nome: "Flores Brancas",        preco: "R$ 9,90", link: "#" },
+  "quartinha":     { icon: "🏺", nome: "Quartinha de Barro",    preco: "R$ 14,90", link: "#" },
+  "sal-grosso":    { icon: "🧂", nome: "Sal Grosso Ritual",     preco: "R$ 3,90", link: "#" },
+  "moedas":        { icon: "🪙", nome: "Moedas p/ Oferenda",   preco: "R$ 5,90", link: "#" }
+};
+
+// Praticantes mockados (virão do Google Sheets em produção)
+const PRATICANTES_MOCK = [
+  { nome: "Mãe Zélia de Oxum",     tipo: "Umbanda · Consulta de Búzios", estrelas: 5, dist: "2.3km", destaque: true,  avatar: "🌸", wa: "5511999990001" },
+  { nome: "Pai João de Ogum",       tipo: "Candomblé · Descarrego",       estrelas: 5, dist: "4.1km", destaque: false, avatar: "⚔️", wa: "5511999990002" },
+  { nome: "Mãe Sandra de Iemanjá",  tipo: "Umbanda · Limpeza Espiritual", estrelas: 4, dist: "5.8km", destaque: false, avatar: "🌊", wa: "5511999990003" }
+];
+
+// ─── ESTADO ─────────────────────────────────────────────────
+let tipoSelecionado = null;
+let mapaInstance    = null;
+let userLat = -23.55, userLng = -46.63; // default SP
+
+// ─── MAPA ────────────────────────────────────────────────────
+function iniciarMapa() {
+  mapaInstance = L.map("mapa", { center: [-14.235, -51.925], zoom: 4, zoomControl: true });
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "© OSM contributors", maxZoom: 18
+  }).addTo(mapaInstance);
+
+  // Geolocalização
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(pos => {
+      userLat = pos.coords.latitude;
+      userLng = pos.coords.longitude;
+      mapaInstance.setView([userLat, userLng], 13);
+    }, () => mapaInstance.setView([-15.78, -47.93], 5));
+  }
+
+  carregarOferendasAtivas();
+}
+
+async function carregarOferendasAtivas() {
+  // Em produção: busca do Google Sheets via CSV público
+  // Por ora, plota exemplos demo
+  const demos = [
+    { lat: -23.550, lng: -46.633, tipo: "caminhos",    texto: "Pedido de abertura de caminhos",  expira: "72h" },
+    { lat: -23.560, lng: -46.650, tipo: "saude",       texto: "Pedido de saúde e cura",          expira: "48h" },
+    { lat: -23.540, lng: -46.620, tipo: "prosperidade",texto: "Pedido de prosperidade",          expira: "36h" },
+    { lat: -23.570, lng: -46.640, tipo: "protecao",    texto: "Pedido de proteção espiritual",   expira: "20h" },
+  ];
+  demos.forEach(plotarOferenda);
+}
+
+function plotarOferenda(o) {
+  const t = TIPOS[o.tipo] || TIPOS.caminhos;
+  const icon = L.divIcon({
+    html: `<div style="
+      font-size:26px;
+      filter:drop-shadow(0 2px 6px rgba(0,0,0,.7));
+      animation:popIn .3s ease;
+    ">${t.emoji}</div>`,
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -34],
+    className: ""
+  });
+
+  const marker = L.marker([o.lat || userLat + (Math.random()-.5)*.01,
+                            o.lng || userLng + (Math.random()-.5)*.01], { icon });
+  marker.bindPopup(`
+    <div style="font-family:'Crimson Pro',serif;padding:2px 4px;">
+      <div style="font-weight:600;font-size:14px;color:#d4a832;margin-bottom:4px;">${t.orixas}</div>
+      <div style="font-size:13px;font-style:italic;color:#c8c0b0;margin-bottom:8px;">${o.texto}</div>
+      <div style="font-size:11px;color:#7a7060;font-family:'Space Mono',monospace;">⏱ Expira em ${o.expira}</div>
+    </div>
+  `);
+  marker.addTo(mapaInstance);
+}
+
+// ─── FORMULÁRIO ──────────────────────────────────────────────
+function selecionarTipo(btn) {
+  document.querySelectorAll(".tipo-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  tipoSelecionado = btn.dataset.tipo;
+}
+
+function atualizarContador(el) {
+  document.getElementById("char-n").textContent = el.value.length;
+}
+
+async function enviarPedido() {
+  const texto = document.getElementById("pedido-texto").value.trim();
+  if (texto.length < 10) {
+    alert("Por favor, escreva seu pedido com ao menos 10 caracteres.");
+    return;
+  }
+
+  mostrarEstado("loading");
+
+  try {
+    // ── MODO DEMO (sem worker configurado) ──
+    // Simula resposta da IA para demonstração
+    // Em produção: substituir pelo fetch ao Cloudflare Worker
+    const resultado = await classificarPedidoDemo(texto);
+
+    if (resultado.status === "APROVADO") {
+      mostrarAprovado(resultado);
+      // plotar no mapa
+      plotarOferenda({
+        lat: userLat + (Math.random()-.5)*.005,
+        lng: userLng + (Math.random()-.5)*.005,
+        tipo: resultado.tipo,
+        texto: resultado.texto_ritual,
+        expira: "72h"
+      });
+      // salvar no sheets (produção)
+      // await salvarNoSheets(resultado);
+    } else {
+      mostrarNegado(resultado);
+    }
+  } catch(e) {
+    console.error(e);
+    mostrarEstado("form");
+    alert("Erro ao processar pedido. Tente novamente.");
+  }
+}
+
+// Demo: classificação local sem IA (substituir por worker em produção)
+async function classificarPedidoDemo(texto) {
+  await new Promise(r => setTimeout(r, 2200)); // simula latência
+
+  const t = texto.toLowerCase();
+  const negativos = ["amarrar","amarração","prejudicar","prejudique","mal","vingança","machucar","destruir","separar à força","morte"];
+  const ehNegativo = negativos.some(p => t.includes(p));
+
+  if (ehNegativo) {
+    return {
+      status: "NEGADO",
+      mensagem_negacao: "A espiritualidade de Umbanda e Candomblé é fundamentada no amor e na evolução. Pedidos que visam prejudicar outros ou ferir o livre-arbítrio não são atendidos pelos Orixás. Se você está passando por um momento difícil, um profissional acolhedor pode te ajudar a encontrar um caminho de cura e equilíbrio."
+    };
+  }
+
+  // Detectar tipo pelo texto
+  let tipo = tipoSelecionado || "caminhos";
+  if (t.includes("saúde") || t.includes("cura") || t.includes("doen")) tipo = "saude";
+  else if (t.includes("amor") || t.includes("relacionamento") || t.includes("namoro")) tipo = "amor";
+  else if (t.includes("dinheiro") || t.includes("prosperidade") || t.includes("trabalho") || t.includes("emprego")) tipo = "prosperidade";
+  else if (t.includes("proteção") || t.includes("proteja") || t.includes("livrá")) tipo = "protecao";
+  else if (t.includes("gratidão") || t.includes("obrigado") || t.includes("agradeço")) tipo = "gratidao";
+
+  const rituais = {
+    caminhos:     "Que Exu abra os caminhos e Pombagira ilumine cada passo da sua jornada. A oferenda foi feita com fé e respeito — confie no processo e aja com coragem.",
+    saude:        "Oxalá e Omulu recebem sua prece com amor. Que a cura flua como água limpa, tocando cada célula do seu ser com luz e equilíbrio.",
+    amor:         "Oxum, a mãe das águas doces, recebe sua oferenda com carinho. Que o amor verdadeiro flua com leveza, respeito e liberdade para todos os envolvidos.",
+    prosperidade: "Ogum e Oxóssi abrem as matas e os caminhos da abundância. Que o trabalho floresça e a prosperidade chegue com merecimento e gratidão.",
+    protecao:     "Ogum, guerreiro de ferro, forma um escudo ao redor de você e dos seus. Nenhuma negatividade atravessa onde a fé é sólida.",
+    gratidao:     "Oxalá recebe sua gratidão como a mais bela das oferendas. A energia do agradecimento multiplica as bênçãos que ainda estão por vir."
+  };
+
+  return {
+    status: "APROVADO",
+    tipo,
+    texto_ritual: rituais[tipo] || rituais.caminhos,
+    elementos: TIPOS[tipo].elementos
+  };
+}
+
+// ─── UI ──────────────────────────────────────────────────────
+function mostrarEstado(estado) {
+  document.getElementById("form-card").style.display         = estado === "form"    ? "block" : "none";
+  document.getElementById("loading").classList.toggle        ("active", estado === "loading");
+  document.getElementById("resultado-aprovado").classList.toggle("active", estado === "aprovado");
+  document.getElementById("resultado-negado").classList.toggle  ("active", estado === "negado");
+}
+
+function mostrarAprovado(r) {
+  const t = TIPOS[r.tipo] || TIPOS.caminhos;
+
+  document.getElementById("prato-emoji").textContent  = t.emoji;
+  document.getElementById("orixas-nome").textContent  = t.orixas;
+  document.getElementById("texto-ritual").textContent = r.texto_ritual;
+
+  // Elementos
+  const lista = document.getElementById("elementos-lista");
+  lista.innerHTML = (r.elementos || t.elementos).map(e =>
+    `<span class="elemento-tag">${e}</span>`
+  ).join("");
+
+  // Afiliados
+  const afGrid = document.getElementById("afiliados-grid");
+  const ks = t.afiliados.slice(0, 3);
+  afGrid.innerHTML = ks.map(k => {
+    const a = AFILIADOS[k];
+    return a ? `<a class="afiliado-item" href="${a.link}" target="_blank" rel="noopener">
+      <div class="afiliado-icon">${a.icon}</div>
+      <div class="afiliado-name">${a.nome}</div>
+      <div class="afiliado-price">${a.preco}</div>
+    </a>` : "";
+  }).join("");
+
+  mostrarEstado("aprovado");
+}
+
+function mostrarNegado(r) {
+  document.getElementById("negado-msg").textContent = r.mensagem_negacao;
+
+  // Praticantes mockados
+  const lista = document.getElementById("praticantes-lista");
+  lista.innerHTML = PRATICANTES_MOCK.map(p => `
+    <a class="praticante-card" href="https://wa.me/${p.wa}" target="_blank" rel="noopener">
+      <div class="praticante-avatar">${p.avatar}</div>
+      <div class="praticante-info">
+        <div class="praticante-nome">${p.nome}</div>
+        <div class="praticante-tipo">${p.tipo}</div>
+        <div class="praticante-stars">${"★".repeat(p.estrelas)}${"☆".repeat(5-p.estrelas)}</div>
+        <div class="praticante-dist">📍 ${p.dist} de você</div>
+      </div>
+      ${p.destaque ? '<div class="praticante-badge">destaque</div>' : ""}
+    </a>
+  `).join("");
+
+  mostrarEstado("negado");
+}
+
+function novoPedido() {
+  document.getElementById("pedido-texto").value = "";
+  document.getElementById("char-n").textContent = "0";
+  document.querySelectorAll(".tipo-btn").forEach(b => b.classList.remove("active"));
+  tipoSelecionado = null;
+  mostrarEstado("form");
+}
+
+// ─── INIT ────────────────────────────────────────────────────
+window.addEventListener("DOMContentLoaded", () => {
+  iniciarMapa();
+  mostrarEstado("form");
+});
+</script>
+
+</body>
+</html>
