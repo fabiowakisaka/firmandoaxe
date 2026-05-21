@@ -1,36 +1,26 @@
-name: Manutenção Diária — Oferenda Digital
+name: Manutenção Diária — Firmando Axé
 
 on:
   schedule:
-    # 00:00 BRT = 03:00 UTC
-    - cron: "0 3 * * *"
+    - cron: "0 3 * * *"   # 00:00 BRT (UTC-3)
   workflow_dispatch:
-    # Permite rodar manualmente pelo GitHub UI
 
 jobs:
   manutencao:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-
     steps:
-      - name: Checkout do repositório
-        uses: actions/checkout@v4
-
-      - name: Configurar Python 3.11
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
-      - name: Cache de dependências
+      - name: Cache pip
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-gspread
-
-      - name: Instalar dependências
-        run: pip install -r backend/requirements.txt
-
+      - run: pip install -r backend/requirements.txt
       - name: Rodar manutenção
         env:
-          GOOGLE_SA_KEY: ${{ secrets.GOOGLE_SA_KEY }}
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
         run: python backend/expire_oferendas.py
