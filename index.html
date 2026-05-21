@@ -157,7 +157,7 @@ footer a:hover{color:var(--amber)}
     
     <div class="card-label">Faça sua oferenda</div>
     <div class="tipos-grid" id="tipos-grid">
-      <button class="tipo-btn active" data-tipo="caminhos" onclick="selecionarTipo(this)"><span class="tipo-icon">🛤️</span><span class="tipo-name">Abertura de Caminhos</span></button>
+      <button class="tipo-btn active" data-tipo="caminhos" onclick="selecionarTipo(this)"><span class="tipo-icon">🧬</span><span class="tipo-name">Abertura de Caminhos</span></button>
       <button class="tipo-btn" data-tipo="saude" onclick="selecionarTipo(this)"><span class="tipo-icon">🌿</span><span class="tipo-name">Saúde e Cura</span></button>
       <button class="tipo-btn" data-tipo="amor" onclick="selecionarTipo(this)"><span class="tipo-icon">🌹</span><span class="tipo-name">Amor</span></button>
       <button class="tipo-btn" data-tipo="prosperidade" onclick="selecionarTipo(this)"><span class="tipo-icon">🌻</span><span class="tipo-name">Prosperidade</span></button>
@@ -186,7 +186,7 @@ footer a:hover{color:var(--amber)}
       <div style="text-align:center;margin-bottom:12px">
         <span class="ia-badge">✦ gerado por inteligência artificial</span>
       </div>
-      <div class="prato" id="prato-emoji">🍽️</div>
+      <div class="prato" id="prato-emoji">🌹</div>
       <div class="orixas-nome" id="orixas-nome"></div>
       <div class="texto-ritual" id="texto-ritual"></div>
       <div class="elementos-lista" id="elementos-lista"></div>
@@ -203,6 +203,9 @@ footer a:hover{color:var(--amber)}
     <div style="margin-bottom:14px">
       <div class="afiliados-title">✦ Faça também no mundo físico</div>
       <div class="afiliados-grid" id="afiliados-grid"></div>
+    </div>
+    <div class="map-recenter-notice" style="text-align:center; font-size:12px; color:var(--amber); margin-bottom:10px; font-style:italic;">
+      ✨ O mapa foi centralizado na sua oferenda firmada.
     </div>
     <button class="btn-nova" onclick="novoPedido()">+ Fazer nova oferenda</button>
   </div>
@@ -227,7 +230,7 @@ footer a:hover{color:var(--amber)}
   <p style="margin-top:5px;font-size:11px">Axé para todos ✦</p>
 </footer>
 
-  <script>
+<script>
 const CONFIG = {
   WORKER_URL: "https://firmandoaxe-api.fabiowakisaka.workers.dev",
   SHEET_ID:   "1H9Zw-bZ1cAupqvoVVhXJ7IVEjdg_j40g9g3Jv9tGsyI",
@@ -237,7 +240,7 @@ const CONFIG = {
 const DEMO_MODE = false;
   
 const TIPOS = {
-  caminhos:    {emoji:"🍽️",cor:"#c97b3a",orixas:"Exu e Pombagira",  afiliados:["vela-vermelha","pipoca","dende"]},
+  caminhos:    {emoji:"🛤️",cor:"#c97b3a",orixas:"Exu e Pombagira",  afiliados:["vela-vermelha","pipoca","dende"]},
   saude:       {emoji:"🌿",cor:"#3B8BD4",orixas:"Oxalá e Omulu",    afiliados:["vela-branca","ervas","quartinha"]},
   amor:        {emoji:"🌹",cor:"#D4537E",orixas:"Oxum",             afiliados:["vela-rosa","rosas","mel"]},
   prosperidade:{emoji:"🌻",cor:"#639922",orixas:"Ogum e Oxóssi",    afiliados:["vela-amarela","mel","moedas"]},
@@ -307,7 +310,8 @@ function iniciarMapa(){
 
 function atualizarPinoAoVivo() {
   if (!coordenadasSelecionadas) return;
-  const t = TIPOS[tipoSelecionado] || TIPOS.caminhos;
+  // CORREÇÃO: Pega o emoji real e dinâmico da categoria selecionada pelo usuário na hora
+  const t = TIPOS[tipoSelecionado] || {emoji: "🌹", cor: "#f5c050"};
   
   const icon = L.divIcon({
     html: `<div style="font-size:30px; filter:drop-shadow(0 0 6px ${t.cor}); text-align:center;">${t.emoji}</div>`,
@@ -359,6 +363,7 @@ function plotarOferenda(o){
       <div style="font-size:10px;color:#8a7458;font-family:'Space Mono',monospace">⏱ Expira em ` + expiraStr + `</div>
     </div>`);
   m.addTo(mapaInstance);
+  return m;
 }
 
 function calcularRestante(expiraEm){
@@ -441,7 +446,7 @@ async function classificarDemo(texto){
     caminhos:"Que Exu abra seus caminhos legítimos e Pombagira traga discernimento e proteção a cada passo da sua caminhada terrena.",
     saude:"Oxalá e Omulu acolhem sua prece. Que fluidos de cura e vitalidade transbordem, limpando e restaurando seu equilíbrio físico e mental.",
     amor:"Mãe Oxum recebe sua intenção nas águas doces. Que o amor legítimo floresça em sua vida com harmonia, afeto e respeito.",
-    prosperidade:"Ogum e Oxóssi cortam as dificuldades e abrem as matas da fartura. Que a colheita do seu trabalho traga prosperidade justa.",
+    prosperidade:"Ogum e Oxóssi cortam as dificuldades e abrem as matas da fartura. Que a colheita do seu trabalho traga prosperity justa.",
     protecao:"Pai Ogum estende seu escudo de aço ao seu redor. Sob fé firme e pensamentos elevados, demandas negativas não prosperam.",
     gratidao:"A energia do agradecimento sela suas bênçãos na lei do retorno. Oxalá multiplica cada grama de gratidão enviada ao plano astral."
   };
@@ -471,8 +476,14 @@ async function salvarESobreporMapa(resultado){
     expira_em: new Date(Date.now()+72*36e5).toISOString()
   };
   
-  plotarOferenda({...oferenda,texto:oferenda.texto_ritual,expira:"72h"});
+  // CORREÇÃO CRÍTICA: Plota o pino final e força o mapa a dar foco exato nas coordenadas geradas
+  const pinoInstanciado = plotarOferenda({...oferenda,texto:oferenda.texto_ritual,expira:"72h"});
+  
   if (markerPreview) { mapaInstance.removeLayer(markerPreview); markerPreview = null; }
+
+  // Executa uma animação suave de aproximação focando exatamente onde a oferenda foi assentada
+  mapaInstance.setView([coordenadasSelecionadas.lat, coordenadasSelecionadas.lng], 15);
+  setTimeout(() => { pinoInstanciado.openPopup(); }, 400);
 
   const shareURL = window.location.origin + window.location.pathname + "?id=" + uuid;
   document.getElementById("share-url-txt").value = shareURL;
@@ -503,7 +514,7 @@ function mostrarEstado(estado){
 
 function mostrarAprovado(r){
   const t=TIPOS[r.tipo]||TIPOS.caminhos;
-  document.getElementById("prato-emoji").textContent=t.emoji;
+  document.getElementById("prato-emoji").textContent=t.emoji; // Altera o grande emoji de resultado para bater com a categoria real da IA
   document.getElementById("orixas-nome").textContent=t.orixas;
   document.getElementById("texto-ritual").textContent=r.texto_ritual;
   document.getElementById("elementos-lista").innerHTML=(r.elementos||[]).map(e=>'<span class="elemento-tag">' + e + '</span>').join("");
