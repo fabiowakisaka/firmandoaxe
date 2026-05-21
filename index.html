@@ -253,14 +253,15 @@ footer a:hover{color:var(--amber)}
 <script>
 // ── CONFIG — preencher após deploy ──────────────────────────
 const CONFIG = {
-  WORKER_URL: "https://oferenda-digital-api.seu-subdominio.workers.dev",
-  SHEET_ID:   "SEU_SHEET_ID_AQUI",
+  WORKER_URL: "https://oferenda-digital-api.fabiowakisaka.workers.dev",
+  SHEET_ID:   "1H9Zw-bZ1cAupqvoVVhXJ7IVEjdg_j40g9g3Jv9tGsyI",
   GID:        "0"
 };
 
 // DEMO_MODE = true enquanto o Worker não estiver configurado
-const DEMO_MODE = CONFIG.WORKER_URL.includes("seu-subdominio");
-
+//const DEMO_MODE = CONFIG.WORKER_URL.includes("seu-subdominio");
+const DEMO_MODE = false;
+  
 const TIPOS = {
   caminhos:    {emoji:"🍽️",cor:"#c97b3a",orixas:"Exu e Pombagira",  afiliados:["vela-vermelha","pipoca","dende"]},
   saude:       {emoji:"🌿",cor:"#3B8BD4",orixas:"Oxalá e Omulu",    afiliados:["vela-branca","ervas","quartinha"]},
