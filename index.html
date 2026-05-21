@@ -3,433 +3,523 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Firmando Axé — Oferenda Digital</title>
-<meta name="description" content="Faça sua oferenda virtual com respeito às tradições de Umbanda e Candomblé. Escolha o local no mapa e envie seu pedido.">
-
+<title>Firmando Axé — Oferenda Virtual</title>
+<meta name="description" content="Faça sua oferenda virtual com respeito às tradições de Umbanda e Candomblé.">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Crimson+Pro:ital,wght=0,300;0,400;0,600;1,300;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Lato:wght@300;400;700&family=Space+Mono&display=swap" rel="stylesheet">
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --bg:        #080705;
-  --bg2:       #100e0b;
-  --bg3:       #1a1712;
-  --border:    rgba(255,220,130,0.12);
-  --gold:      #d4a832;
-  --gold2:     #f0c84a;
-  --white:     #f0ead6;
-  --text-dim:  #a09888;
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#1c1208;--bg2:#261a0a;--bg3:#311f0c;--bg4:#3d2610;
+  --border:rgba(220,170,80,.15);--border2:rgba(220,170,80,.30);
+  --amber:#e09b30;--amber2:#f5c050;--amber-dim:rgba(224,155,48,.12);
+  --terra:#c4572a;--terra2:#e06a38;--cream:#f5ead0;
+  --text:#ede0c4;--muted:#8a7458;--green:#5a8a4a;
+  --font-head:'Playfair Display',serif;
+  --font-body:'Lato',sans-serif;
+  --font-mono:'Space Mono',monospace;
+  --radius:14px;
 }
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 40% at 50% -10%,rgba(200,100,30,.18) 0%,transparent 60%),radial-gradient(ellipse 60% 30% at 80% 100%,rgba(180,80,20,.10) 0%,transparent 50%);pointer-events:none;z-index:0}
 
-body {
-  background: var(--bg);
-  color: var(--white);
-  font-family: 'Crimson Pro', serif;
-  overflow-x: hidden;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
+/* HEADER */
+.header{text-align:center;padding:44px 20px 20px;position:relative;z-index:1}
+.header-eyebrow{font-family:var(--font-mono);font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:var(--amber);opacity:.75;margin-bottom:10px}
+.header h1{font-family:var(--font-head);font-size:clamp(26px,7vw,42px);font-weight:600;font-style:italic;color:var(--cream);text-shadow:0 2px 24px rgba(200,120,30,.35);line-height:1.15}
+.header h1 span{color:var(--amber2);font-style:normal}
+.header-sub{font-size:14px;color:var(--muted);margin-top:8px;font-weight:300}
+.header-divider{width:80px;height:1px;background:linear-gradient(90deg,transparent,var(--amber),transparent);margin:16px auto 0;opacity:.5}
 
-.cinzel { font-family: 'Cinzel Decorative', serif; }
-.mono { font-family: 'Space Mono', monospace; }
+/* VELAS */
+.candle-row{display:flex;justify-content:center;gap:20px;padding:16px 0 28px;position:relative;z-index:1}
+.candle{display:flex;flex-direction:column;align-items:center}
+.flame{width:9px;height:16px;background:radial-gradient(ellipse at 50% 80%,#fff8e0 0%,#ffc030 35%,#e06010 75%,transparent 100%);border-radius:50% 50% 25% 25%;animation:flicker 2s ease-in-out infinite alternate;filter:blur(.3px)}
+.candle-body{width:11px;height:32px;border-radius:2px}
+.candle-body::after{content:'';display:block;width:100%;height:100%;border-radius:2px;background:linear-gradient(90deg,rgba(255,255,255,.12) 0%,transparent 50%)}
+.c1 .candle-body,.c5 .candle-body{background:linear-gradient(180deg,#c83020,#7a1810)}
+.c2 .candle-body,.c4 .candle-body{background:linear-gradient(180deg,#e8dfc0,#a89870)}
+.c3 .candle-body{background:linear-gradient(180deg,#4070c0,#1a3870)}
+.c1 .flame{animation-delay:0s}.c2 .flame{animation-delay:.4s}.c3 .flame{animation-delay:.8s}.c4 .flame{animation-delay:.2s}.c5 .flame{animation-delay:.6s}
+@keyframes flicker{0%{transform:scaleX(1) scaleY(1);opacity:1}30%{transform:scaleX(.82) scaleY(1.12) translateX(1px);opacity:.9}60%{transform:scaleX(1.12) scaleY(.9) translateX(-1px);opacity:1}100%{transform:scaleX(.95) scaleY(1.05);opacity:.95}}
 
-header {
-  background: linear-gradient(to bottom, #000, var(--bg2));
-  border-bottom: 1px solid var(--border);
-  padding: 1.5rem;
-  text-align: center;
-}
-header h1 { color: var(--gold); font-size: 1.6rem; letter-spacing: 2px; }
-header p { font-size: 0.85rem; color: var(--text-dim); margin-top: 0.2rem; }
+/* LAYOUT */
+.main{max-width:580px;margin:0 auto;padding:0 16px 80px;position:relative;z-index:1}
 
-.app-container {
-  max-width: 1200px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 1.5rem;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.5rem;
-  flex-grow: 1;
-}
-@media (min-width: 900px) {
-  .app-container { grid-template-columns: 420px 1fr; }
-}
+/* CARD */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:14px;position:relative;overflow:hidden}
+.card::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--amber),transparent);opacity:.3}
+.card-label{font-family:var(--font-mono);font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--amber);margin-bottom:14px;opacity:.8}
 
-.painel {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.2rem;
-  justify-content: space-between;
-}
+/* MAPA */
+.mapa-label{font-family:var(--font-mono);font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.mapa-dot{width:7px;height:7px;border-radius:50%;background:var(--terra2);animation:blink 1.6s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+#mapa{height:260px;border-radius:var(--radius);border:1px solid var(--border);overflow:hidden}
+.leaflet-tile{filter:sepia(.6) hue-rotate(10deg) brightness(.6) contrast(1.1)}
+.leaflet-container{background:var(--bg)!important}
+.leaflet-popup-content-wrapper{background:var(--bg2)!important;border:1px solid var(--border2)!important;border-radius:10px!important;color:var(--text)!important;box-shadow:0 8px 32px rgba(0,0,0,.5)!important}
+.leaflet-popup-tip{background:var(--bg2)!important}
+.leaflet-popup-close-button{color:var(--muted)!important}
+.leaflet-control-zoom a{background:var(--bg2)!important;border-color:var(--border)!important;color:var(--text)!important}
 
-.instrucoes {
-  background: var(--bg3);
-  padding: 1rem;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  border-left: 3px solid var(--gold);
-  color: var(--text-dim);
-  line-height: 1.4;
-}
+/* TIPOS */
+.tipos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.tipo-btn{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:11px 6px;cursor:pointer;text-align:center;transition:all .18s;color:var(--muted);font-family:var(--font-body)}
+.tipo-btn:hover{border-color:var(--border2);color:var(--text);background:var(--bg4)}
+.tipo-btn.active{border-color:var(--amber);background:var(--amber-dim);color:var(--amber2)}
+.tipo-icon{font-size:22px;display:block;margin-bottom:4px}
+.tipo-name{font-size:11px;line-height:1.3}
 
-textarea {
-  width: 100%;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--white);
-  padding: 1rem;
-  font-family: inherit;
-  font-size: 1rem;
-  resize: none;
-}
-textarea:focus { outline: 1px solid var(--gold); }
+/* TEXTAREA */
+.pedido-area{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;padding:13px 15px;resize:none;outline:none;min-height:96px;transition:border-color .2s,box-shadow .2s}
+.pedido-area::placeholder{color:var(--muted);font-style:italic}
+.pedido-area:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(224,155,48,.09)}
+.char-count{font-family:var(--font-mono);font-size:10px;color:var(--muted);text-align:right;margin-top:5px}
 
-.categorias-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
-}
-.cat-btn {
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  padding: 0.6rem;
-  border-radius: 8px;
-  color: var(--text-dim);
-  cursor: pointer;
-  font-size: 0.8rem;
-  text-align: center;
-  transition: all 0.2s;
-}
-.cat-btn.active {
-  border-color: var(--gold);
-  color: var(--gold2);
-  background: rgba(212,168,50,0.08);
-}
+/* EMAIL */
+.email-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-body);font-size:13px;padding:10px 13px;outline:none;transition:border-color .2s;margin-top:10px}
+.email-input::placeholder{color:var(--muted);font-style:italic}
+.email-input:focus{border-color:var(--amber)}
 
-.btn-firmar {
-  width: 100%;
-  background: linear-gradient(135deg, #8a2518, #4a120b);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: var(--white);
-  padding: 1rem;
-  border-radius: 12px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.2s;
-  letter-spacing: 1px;
-}
-.btn-firmar:hover { opacity: 0.9; }
-.btn-firmar:disabled { opacity: 0.4; cursor: not-allowed; }
+/* BTN PRINCIPAL */
+.btn-oferenda{width:100%;border:none;border-radius:var(--radius);background:linear-gradient(135deg,#c47820 0%,#8a4e10 100%);color:#1c0e02;font-family:var(--font-head);font-size:15px;font-weight:600;letter-spacing:.03em;padding:15px;cursor:pointer;transition:all .2s;margin-top:14px;position:relative;overflow:hidden}
+.btn-oferenda::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,#f0a030 0%,#c47820 100%);opacity:0;transition:opacity .2s}
+.btn-oferenda:hover::before{opacity:1}
+.btn-oferenda:active{transform:scale(.98)}
+.btn-oferenda:disabled{opacity:.4;cursor:not-allowed}
+.btn-oferenda span{position:relative;z-index:1}
 
-.mapa-wrapper {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 0.5rem;
-  min-height: 450px;
-}
-#map {
-  width: 100%;
-  height: 100%;
-  min-height: 500px;
-  border-radius: 12px;
-  background: #111;
-}
+/* LOADING */
+.loading-overlay{display:none;text-align:center;padding:32px 20px}
+.loading-overlay.active{display:block}
+.loading-candle{font-size:36px;animation:sway 2s ease-in-out infinite}
+@keyframes sway{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+.loading-text{font-family:var(--font-head);font-style:italic;font-size:16px;color:var(--amber);margin-top:14px;animation:pulse 2s ease-in-out infinite}
+.loading-sub{font-size:12px;color:var(--muted);margin-top:6px}
+@keyframes pulse{0%,100%{opacity:.7}50%{opacity:1}}
 
-.sucesso-box {
-  background: var(--bg3);
-  border: 1px solid var(--gold);
-  border-radius: 12px;
-  padding: 1.5rem;
-  text-align: center;
-}
-.share-input-group {
-  display: flex;
-  margin-top: 1rem;
-  gap: 0.5rem;
-}
-.share-url {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  padding: 0.5rem;
-  font-size: 0.8rem;
-  border-radius: 6px;
-  flex-grow: 1;
-  color: var(--gold2);
-}
-.btn-copy {
-  background: var(--gold);
-  color: var(--bg);
-  border: none;
-  padding: 0.5rem 1rem;
-  font-weight: bold;
-  border-radius: 6px;
-  cursor: pointer;
-}
+/* RESULTADO */
+.resultado{display:none;animation:fadeUp .4s ease}
+.resultado.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+/* OFERENDA VISUAL */
+.oferenda-visual{background:linear-gradient(160deg,var(--bg3) 0%,var(--bg2) 100%);border:1px solid var(--border2);border-radius:var(--radius);padding:24px 20px;margin-bottom:14px;text-align:center}
+.prato{font-size:56px;margin-bottom:12px;line-height:1;filter:drop-shadow(0 4px 16px rgba(180,100,20,.35))}
+.orixas-nome{font-family:var(--font-head);font-style:italic;font-size:14px;color:var(--amber2);letter-spacing:.04em;margin-bottom:10px}
+.texto-ritual{font-size:15px;line-height:1.75;color:var(--text);font-weight:300;font-style:italic;border-left:2px solid var(--amber);padding-left:14px;margin:0 auto;text-align:left;max-width:400px}
+.elementos-lista{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:16px}
+.elemento-tag{background:rgba(180,80,20,.15);border:1px solid rgba(200,100,30,.25);border-radius:20px;padding:4px 13px;font-size:12px;color:var(--amber);font-family:var(--font-mono)}
+.expira-info{font-family:var(--font-mono);font-size:10px;color:var(--muted);text-align:center;margin-top:14px;letter-spacing:.04em}
+.ia-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(90,138,74,.12);border:1px solid rgba(90,138,74,.25);border-radius:6px;padding:3px 10px;font-size:10px;color:#8abf7a;font-family:var(--font-mono);margin-bottom:14px}
+
+/* AFILIADOS */
+.afiliados-title{font-family:var(--font-mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.afiliados-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.afiliado-item{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 8px;text-align:center;cursor:pointer;transition:all .18s;text-decoration:none;color:inherit;display:block}
+.afiliado-item:hover{border-color:var(--border2);transform:translateY(-2px)}
+.afiliado-icon{font-size:24px;margin-bottom:5px}
+.afiliado-name{font-size:11px;color:var(--muted);line-height:1.3}
+.afiliado-price{font-family:var(--font-mono);font-size:10px;color:var(--amber);margin-top:4px}
+
+/* NEGADO */
+.negado-card{background:linear-gradient(135deg,rgba(180,60,40,.08) 0%,var(--bg2) 100%);border:1px solid rgba(180,60,40,.25);border-radius:var(--radius);padding:22px 20px;margin-bottom:14px}
+.negado-icon{font-size:32px;margin-bottom:10px}
+.negado-title{font-family:var(--font-head);font-style:italic;font-size:15px;color:var(--terra2);margin-bottom:10px}
+.negado-msg{font-size:14px;color:var(--text);line-height:1.75;font-weight:300;font-style:italic}
+
+/* PRATICANTES */
+.praticantes-label{font-size:13px;color:var(--text);font-weight:700;margin-bottom:12px}
+.praticante-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:8px;display:flex;gap:13px;align-items:flex-start;transition:border-color .18s;text-decoration:none;color:inherit;cursor:pointer}
+.praticante-card:hover{border-color:var(--border2)}
+.praticante-avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--bg4),var(--bg3));border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.praticante-info{flex:1;min-width:0}
+.praticante-nome{font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px}
+.praticante-tipo{font-size:12px;color:var(--muted);margin-bottom:5px}
+.praticante-stars{color:var(--amber);font-size:13px}
+.praticante-dist{font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:3px}
+.praticante-badge{background:var(--amber-dim);border:1px solid rgba(220,170,80,.25);border-radius:4px;padding:2px 7px;font-size:10px;color:var(--amber);font-family:var(--font-mono);white-space:nowrap;flex-shrink:0}
+
+/* BTN NOVA */
+.btn-nova{width:100%;background:transparent;border:1px solid var(--border2);border-radius:var(--radius);color:var(--amber);font-family:var(--font-head);font-style:italic;font-size:14px;padding:13px;cursor:pointer;transition:all .18s;margin-top:10px}
+.btn-nova:hover{background:var(--amber-dim);border-color:var(--amber)}
+
+/* FOOTER */
+footer{text-align:center;padding:24px 20px;font-size:12px;color:var(--muted);border-top:1px solid var(--border);position:relative;z-index:1}
+footer a{color:var(--muted);text-decoration:none;transition:color .2s}
+footer a:hover{color:var(--amber)}
+
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:4px}
+
+@media(max-width:400px){.tipos-grid{grid-template-columns:repeat(2,1fr)}.afiliados-grid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
 
-<header>
-  <h1 class="cinzel">FIRMANDO AXÉ</h1>
-  <p>Conectando Fé, Respeito e Tecnologia Ancestral</p>
+<header class="header">
+  <div class="header-eyebrow">Umbanda · Candomblé · Axé</div>
+  <h1>Firmando <span>Axé</span></h1>
+  <p class="header-sub">Oferenda virtual com respeito às tradições de matriz africana</p>
+  <div class="header-divider"></div>
 </header>
 
-<div class="app-container">
-  
-  <aside class="painel" id="painel-fluxo">
-    <div id="fluxo-dados">
-      <h2 class="cinzel" style="color: var(--gold); font-size: 1.2rem; margin-bottom: 0.5rem;">Prepare seu Axé</h2>
-      
-      <div class="instrucoes" id="status-passo" style="margin-bottom: 1rem;">
-        📍 <b>Passo 1:</b> Navegue pelo mapa e dê um clique no local exato onde deseja firmar sua oferenda virtual.
-      </div>
+<div class="candle-row" aria-hidden="true">
+  <div class="candle c1"><div class="flame"></div><div class="candle-body"></div></div>
+  <div class="candle c2"><div class="flame"></div><div class="candle-body"></div></div>
+  <div class="candle c3"><div class="flame"></div><div class="candle-body"></div></div>
+  <div class="candle c4"><div class="flame"></div><div class="candle-body"></div></div>
+  <div class="candle c5"><div class="flame"></div><div class="candle-body"></div></div>
+</div>
 
-      <div style="margin-bottom: 1rem;">
-        <label class="mono" style="font-size: 0.75rem; color: var(--gold); display:block; margin-bottom: 0.4rem;">1. SELECIONE A VERTENTE (Muda o ícone ao vivo)</label>
-        <div class="categorias-grid">
-          <div class="cat-btn active" data-cat="caminhos">🌾 Caminhos</div>
-          <div class="cat-btn" data-cat="saude">🌿 Saúde</div>
-          <div class="cat-btn" data-cat="protecao">🛡️ Proteção</div>
-          <div class="cat-btn" data-cat="prosperidade">🪙 Fortuna</div>
-          <div class="cat-btn" data-cat="amor">🌹 Amor</div>
-          <div class="cat-btn" data-cat="gratidãao">✨ Gratidão</div>
-        </div>
-      </div>
+<div class="main">
 
-      <div>
-        <label class="mono" style="font-size: 0.75rem; color: var(--gold); display:block; margin-bottom: 0.4rem;">2. DIGITE SUA INTENÇÃO</label>
-        <textarea id="pedido-texto" rows="4" placeholder="Escreva sua prece de coração... Os guias conhecem sua verdade."></textarea>
-      </div>
+  <div style="margin-bottom:16px">
+    <div class="mapa-label"><span class="mapa-dot"></span>Oferendas ativas agora</div>
+    <div id="mapa"></div>
+  </div>
+
+  <div class="card" id="form-card">
+    <div class="card-label">Faça sua oferenda</div>
+    <div class="tipos-grid" id="tipos-grid">
+      <button class="tipo-btn" data-tipo="caminhos" onclick="selecionarTipo(this)"><span class="tipo-icon">🛤️</span><span class="tipo-name">Abertura de Caminhos</span></button>
+      <button class="tipo-btn" data-tipo="saude" onclick="selecionarTipo(this)"><span class="tipo-icon">🌿</span><span class="tipo-name">Saúde e Cura</span></button>
+      <button class="tipo-btn" data-tipo="amor" onclick="selecionarTipo(this)"><span class="tipo-icon">🌹</span><span class="tipo-name">Amor</span></button>
+      <button class="tipo-btn" data-tipo="prosperidade" onclick="selecionarTipo(this)"><span class="tipo-icon">🌻</span><span class="tipo-name">Prosperidade</span></button>
+      <button class="tipo-btn" data-tipo="protecao" onclick="selecionarTipo(this)"><span class="tipo-icon">🛡️</span><span class="tipo-name">Proteção</span></button>
+      <button class="tipo-btn" data-tipo="gratidao" onclick="selecionarTipo(this)"><span class="tipo-icon">🙏</span><span class="tipo-name">Gratidão</span></button>
     </div>
+    <textarea class="pedido-area" id="pedido-texto" maxlength="300"
+      placeholder="Escreva seu pedido com sinceridade... (ex: Peço proteção para minha família e abertura de novos caminhos no trabalho)"
+      oninput="atualizarContador(this)"></textarea>
+    <div class="char-count"><span id="char-n">0</span>/300</div>
+    <input type="email" class="email-input" id="email-visitante"
+      placeholder="Seu e-mail (opcional) — para avaliar o atendimento depois">
+    <button class="btn-oferenda" id="btn-enviar" onclick="enviarPedido()">
+      <span>🕯️ Fazer Oferenda</span>
+    </button>
+  </div>
 
-    <div id="acao-container" style="margin-top: 1rem;">
-      <button class="btn-firmar" id="btn-acao-principal" disabled>Aguardando clique no mapa...</button>
+  <div class="loading-overlay" id="loading">
+    <div class="loading-candle">🕯️</div>
+    <div class="loading-text">Os guias estão recebendo seu pedido...</div>
+    <div class="loading-sub">A IA está gerando sua oferenda personalizada</div>
+  </div>
+
+  <div class="resultado" id="resultado-aprovado">
+    <div class="oferenda-visual">
+      <div style="text-align:center;margin-bottom:12px">
+        <span class="ia-badge">✦ gerado por inteligência artificial</span>
+      </div>
+      <div class="prato" id="prato-emoji">🍽️</div>
+      <div class="orixas-nome" id="orixas-nome"></div>
+      <div class="texto-ritual" id="texto-ritual"></div>
+      <div class="elementos-lista" id="elementos-lista"></div>
+      <div class="expira-info">✦ Sua oferenda ficará no mapa por 72 horas ✦</div>
     </div>
-  </aside>
+    <div style="margin-bottom:14px">
+      <div class="afiliados-title">✦ Faça também no mundo físico</div>
+      <div class="afiliados-grid" id="afiliados-grid"></div>
+    </div>
+    <button class="btn-nova" onclick="novoPedido()">+ Fazer nova oferenda</button>
+  </div>
 
-  <main class="mapa-wrapper">
-    <div id="map"></div>
-  </main>
+  <div class="resultado" id="resultado-negado">
+    <div class="negado-card">
+      <div class="negado-icon">🙏</div>
+      <div class="negado-title">A espiritualidade não apoia este caminho</div>
+      <div class="negado-msg" id="negado-msg"></div>
+    </div>
+    <div id="praticantes-section">
+      <div class="praticantes-label">Encontre um profissional acolhedor perto de você</div>
+      <div id="praticantes-lista"></div>
+    </div>
+    <button class="btn-nova" onclick="novoPedido()">+ Fazer outro pedido</button>
+  </div>
 
 </div>
 
+<footer>
+  <p>Feito com respeito às tradições de matriz africana &nbsp;·&nbsp;
+    <a href="praticantes.html">Sou praticante — cadastrar-me</a></p>
+  <p style="margin-top:5px;font-size:11px">Axé para todos ✦</p>
+</footer>
+
 <script>
-// Ajuste estas variáveis quando configurar seu Worker e Planilha reais
+// ── CONFIG — preencher após deploy ──────────────────────────
 const CONFIG = {
   WORKER_URL: "https://oferenda-digital-api.seu-subdominio.workers.dev",
-  SHEET_ID: "SEU_SHEET_ID_AQUI"
+  SHEET_ID:   "SEU_SHEET_ID_AQUI",
+  GID:        "0"
 };
 
-const ICONES_MAPA = {
-  caminhos: '🌾', saude: '🌿', protecao: '🛡️', prosperidade: '🪙', amor: '🌹', gratidao: '✨'
+// DEMO_MODE = true enquanto o Worker não estiver configurado
+const DEMO_MODE = CONFIG.WORKER_URL.includes("seu-subdominio");
+
+const TIPOS = {
+  caminhos:    {emoji:"🍽️",cor:"#c97b3a",orixas:"Exu e Pombagira",  afiliados:["vela-vermelha","pipoca","dende"]},
+  saude:       {emoji:"🌿",cor:"#3B8BD4",orixas:"Oxalá e Omulu",    afiliados:["vela-branca","ervas","quartinha"]},
+  amor:        {emoji:"🌹",cor:"#D4537E",orixas:"Oxum",             afiliados:["vela-rosa","rosas","mel"]},
+  prosperidade:{emoji:"🌻",cor:"#639922",orixas:"Ogum e Oxóssi",    afiliados:["vela-amarela","mel","moedas"]},
+  protecao:    {emoji:"🛡️",cor:"#534AB7",orixas:"Ogum",             afiliados:["vela-preta","sal-grosso","defumador"]},
+  gratidao:    {emoji:"🙏",cor:"#BA7517",orixas:"Oxalá",            afiliados:["vela-branca","flores","quartinha"]}
 };
 
-let mapa = null;
-let markerPreview = null;
-let categoriaSelecionada = "caminhos";
-let coordenadasSelecionadas = null;
+const AFILIADOS = {
+  "vela-vermelha":{icon:"🕯️",nome:"Vela Vermelha 7 Dias",preco:"R$ 4,90",link:"#"},
+  "vela-branca":  {icon:"🕯️",nome:"Vela Branca 7 Dias",  preco:"R$ 4,90",link:"#"},
+  "vela-rosa":    {icon:"🕯️",nome:"Vela Rosa 7 Dias",    preco:"R$ 4,90",link:"#"},
+  "vela-amarela": {icon:"🕯️",nome:"Vela Amarela 7 Dias", preco:"R$ 4,90",link:"#"},
+  "vela-preta":   {icon:"🕯️",nome:"Vela Preta 7 Dias",   preco:"R$ 4,90",link:"#"},
+  "pipoca":       {icon:"🍿",nome:"Pipoca p/ Oferenda",  preco:"R$ 3,50",link:"#"},
+  "dende":        {icon:"🫒",nome:"Azeite de Dendê",     preco:"R$ 8,90",link:"#"},
+  "ervas":        {icon:"🌿",nome:"Kit Ervas Sagradas",  preco:"R$ 12,90",link:"#"},
+  "mel":          {icon:"🍯",nome:"Mel Puro Oferenda",   preco:"R$ 9,90",link:"#"},
+  "defumador":    {icon:"💨",nome:"Defumador Sagrado",   preco:"R$ 7,90",link:"#"},
+  "rosas":        {icon:"🌹",nome:"Rosas p/ Oferenda",   preco:"R$ 11,90",link:"#"},
+  "flores":       {icon:"🌸",nome:"Flores Brancas",      preco:"R$ 9,90",link:"#"},
+  "quartinha":    {icon:"🏺",nome:"Quartinha de Barro",  preco:"R$ 14,90",link:"#"},
+  "sal-grosso":   {icon:"🧂",nome:"Sal Grosso Ritual",   preco:"R$ 3,90",link:"#"},
+  "moedas":       {icon:"🪙",nome:"Moedas p/ Oferenda",  preco:"R$ 5,90",link:"#"}
+};
 
-function inicializarMapa() {
-  // Centralizado no Brasil por padrão
-  mapa = L.map('map', { zoomControl: false }).setView([-14.2350, -51.9253], 4);
-  L.control.zoom({ position: 'bottomright' }).addTo(mapa);
+const PRATICANTES_DEMO=[
+  {nome:"Mãe Zélia de Oxum",    tipo:"Umbanda · Consulta de Búzios", estrelas:5,dist:"2.3km",destaque:true, avatar:"🌸",wa:"5511999990001"},
+  {nome:"Pai João de Ogum",     tipo:"Candomblé · Descarrego",       estrelas:5,dist:"4.1km",destaque:false,avatar:"⚔️",wa:"5511999990002"},
+  {nome:"Mãe Sandra de Iemanjá",tipo:"Umbanda · Limpeza Espiritual", estrelas:4,dist:"5.8km",destaque:false,avatar:"🌊",wa:"5511999990003"}
+];
 
-  // Mapa com tema Dark escuro e imersivo
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap &copy; CARTO'
-  }).addTo(mapa);
+let tipoSelecionado=null, mapaInstance=null;
+let userLat=-23.55, userLng=-46.63;
 
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(pos => {
-      mapa.setView([pos.coords.latitude, pos.coords.longitude], 14);
-    });
+// MAPA
+function iniciarMapa(){
+  mapaInstance=L.map("mapa",{center:[-14.235,-51.925],zoom:4});
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OSM contributors",maxZoom:18}).addTo(mapaInstance);
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      pos=>{userLat=pos.coords.latitude;userLng=pos.coords.longitude;mapaInstance.setView([userLat,userLng],13)},
+      ()=>mapaInstance.setView([-15.78,-47.93],5)
+    );
   }
+  carregarOferendasAtivas();
+}
 
-  // Captura o clique do usuário no mapa
-  mapa.on('click', (e) => {
-    const { lat, lng } = e.latlng;
-    coordenadasSelecionadas = { lat, lng };
-    atualizarPinoAoVivo();
-    definirBotaoEstado("pronto");
+async function carregarOferendasAtivas(){
+  if(!CONFIG.SHEET_ID||CONFIG.SHEET_ID==="SEU_SHEET_ID_AQUI"){plotarDemos();return}
+  try{
+    const url=`https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:csv&gid=${CONFIG.GID}`;
+    const res=await fetch(url);
+    const csv=await res.text();
+    const rows=csvParaObjetos(csv);
+    rows.filter(r=>r.status_ativa==="1").forEach(r=>plotarOferenda({
+      lat:parseFloat(r.lat),lng:parseFloat(r.lng),tipo:r.tipo,texto:r.texto_ritual,expira:r.expira_em
+    }));
+  }catch{plotarDemos()}
+}
+
+function plotarDemos(){
+  [{lat:-23.550,lng:-46.633,tipo:"caminhos",    texto:"Pedido de abertura de caminhos",expira:"48h"},
+   {lat:-23.560,lng:-46.650,tipo:"saude",       texto:"Pedido de saúde e cura",        expira:"36h"},
+   {lat:-23.545,lng:-46.625,tipo:"prosperidade",texto:"Pedido de prosperidade",        expira:"20h"},
+   {lat:-23.570,lng:-46.640,tipo:"protecao",    texto:"Proteção espiritual",           expira:"10h"}
+  ].forEach(plotarOferenda);
+}
+
+function csvParaObjetos(csv){
+  const l=csv.trim().split("\n");
+  const h=l[0].split(",").map(x=>x.replace(/"/g,"").trim());
+  return l.slice(1).map(r=>{
+    const v=r.split(",").map(x=>x.replace(/"/g,"").trim());
+    return Object.fromEntries(h.map((k,i)=>[k,v[i]||""]));
   });
 }
 
-function atualizarPinoAoVivo() {
-  if (!coordenadasSelecionadas) return;
-  const emoji = ICONES_MAPA[categoriaSelecionada] || '📍';
-  
-  const customIcon = L.divIcon({
-    html: `<div style="font-size: 30px; filter: drop-shadow(0 0 6px #d4a832); text-align:center;">${emoji}</div>`,
-    className: 'custom-pin',
-    iconSize: [32, 32],
-    iconAnchor: [16, 32]
+function plotarOferenda(o){
+  const t=TIPOS[o.tipo]||TIPOS.caminhos;
+  const icon=L.divIcon({
+    html:`<div style="font-size:28px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.7))">${t.emoji}</div>`,
+    iconSize:[32,32],iconAnchor:[16,32],popupAnchor:[0,-34],className:""
   });
-
-  if (markerPreview) {
-    markerPreview.setLatLng([coordenadasSelecionadas.lat, coordenadasSelecionadas.lng]);
-    markerPreview.setIcon(customIcon);
-  } else {
-    markerPreview = L.marker([coordenadasSelecionadas.lat, coordenadasSelecionadas.lng], { icon: customIcon }).addTo(mapa);
-  }
-  mapa.panTo([coordenadasSelecionadas.lat, coordenadasSelecionadas.lng]);
+  const m=L.marker([o.lat,o.lng],{icon});
+  const expiraStr=typeof o.expira==="string"&&o.expira.includes("h")?o.expira:calcularRestante(o.expira);
+  m.bindPopup(`
+    <div style="font-family:'Lato',sans-serif;padding:2px 4px;min-width:160px">
+      <div style="font-weight:700;font-size:13px;color:#e09b30;margin-bottom:4px">${t.orixas}</div>
+      <div style="font-size:12px;font-style:italic;color:#c8b898;margin-bottom:7px">${o.texto}</div>
+      <div style="font-size:10px;color:#8a7458;font-family:'Space Mono',monospace">⏱ Expira em ${expiraStr}</div>
+    </div>`);
+  m.addTo(mapaInstance);
 }
 
-function configurarEventos() {
-  document.querySelectorAll(".cat-btn").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      document.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("active"));
-      e.target.classList.add("active");
-      categoriaSelecionada = e.target.getAttribute("data-cat");
-      atualizarPinoAoVivo(); // Muda o ícone na hora se o pino já estiver no mapa
-    });
+function calcularRestante(expiraEm){
+  const h=Math.floor((new Date(expiraEm)-Date.now())/36e5);
+  return h>0?`${h}h`:"Expirando...";
+}
+
+// FORMULÁRIO
+function selecionarTipo(btn){
+  document.querySelectorAll(".tipo-btn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  tipoSelecionado=btn.dataset.tipo;
+}
+
+function atualizarContador(el){
+  document.getElementById("char-n").textContent=el.value.length;
+}
+
+async function enviarPedido(){
+  const texto=document.getElementById("pedido-texto").value.trim();
+  if(texto.length<10){alert("Por favor, escreva seu pedido com ao menos 10 caracteres.");return}
+  document.getElementById("btn-enviar").disabled=true;
+  mostrarEstado("loading");
+  try{
+    // DEMO_MODE=true → IA simulada local (sem custo, sem Worker)
+    // DEMO_MODE=false → chama Cloudflare Worker → Gemini gera texto único para cada pedido
+    const resultado=DEMO_MODE?await classificarDemo(texto):await classificarViaWorker(texto);
+    if(resultado.status==="APROVADO"){
+      mostrarAprovado(resultado);
+      salvarESobreporMapa(resultado);
+    }else{
+      mostrarNegado(resultado);
+      salvarPedidoNegado(texto);
+    }
+  }catch(e){
+    console.error(e);
+    mostrarEstado("form");
+    alert("Erro ao processar pedido. Tente novamente.");
+  }finally{
+    document.getElementById("btn-enviar").disabled=false;
+  }
+}
+
+// Chamada real: Worker → Gemini API → texto gerado na hora para o pedido específico
+async function classificarViaWorker(texto){
+  const res=await fetch(`${CONFIG.WORKER_URL}/classificar`,{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({texto})
   });
-
-  document.getElementById("btn-acao-principal").addEventListener("click", enviarOferenda);
+  if(!res.ok)throw new Error(`Worker error: ${res.status}`);
+  return res.json();
 }
 
-function definirBotaoEstado(estado) {
-  const btn = document.getElementById("btn-acao-principal");
-  const instrucoes = document.getElementById("status-passo");
-
-  if (estado === "pronto") {
-    btn.disabled = false;
-    btn.innerHTML = "Firmar Oferenda Virtual 🔥";
-    instrucoes.innerHTML = "✨ <b>Local escolhido!</b> Agora descreva seu pedido com fé e clique no botão vermelho abaixo.";
-    instrucoes.style.borderLeftColor = "#22c55e";
-  } else if (estado === "enviando") {
-    btn.disabled = true;
-    btn.innerHTML = "Consultando os Guias... 🕯️";
+// Demo local: textos pré-escritos, sem IA real
+async function classificarDemo(texto){
+  await new Promise(r=>setTimeout(r,2000));
+  const t=texto.toLowerCase();
+  const neg=["amarrar","amarração","prejudicar","machucar","vingança","destruir","morte","mal feito","mal-feito"];
+  if(neg.some(p=>t.includes(p))){
+    return{status:"NEGADO",mensagem_negacao:"A espiritualidade de Umbanda e Candomblé é fundada no amor e na evolução espiritual. Pedidos que visem prejudicar o livre-arbítrio de outrem não encontram amparo nos Orixás. Se você está passando por um momento difícil, um profissional acolhedor pode te ajudar a encontrar um caminho de cura, equilíbrio e paz."};
   }
+  let tipo=tipoSelecionado||"caminhos";
+  if(t.includes("saúde")||t.includes("cura")||t.includes("doen"))tipo="saude";
+  else if(t.includes("amor")||t.includes("relacionament")||t.includes("namoro"))tipo="amor";
+  else if(t.includes("dinheiro")||t.includes("prosperidade")||t.includes("emprego")||t.includes("trabalho"))tipo="prosperidade";
+  else if(t.includes("proteção")||t.includes("protej")||t.includes("livrá"))tipo="protecao";
+  else if(t.includes("gratidão")||t.includes("obrigado")||t.includes("agradeço"))tipo="gratidao";
+  const textos={
+    caminhos:"Que Exu abra os caminhos e Pombagira ilumine cada passo de sua jornada. Esta oferenda foi feita com fé e respeito — confie no processo e aja com coragem.",
+    saude:"Oxalá e Omulu recebem sua prece com amor. Que a cura flua como água limpa, tocando cada célula do seu ser com luz e equilíbrio.",
+    amor:"Oxum, mãe das águas doces, recebe sua oferenda com carinho. Que o amor verdadeiro flua com leveza, respeito e liberdade para todos os envolvidos.",
+    prosperidade:"Ogum e Oxóssi abrem as matas e os caminhos da abundância. Que o trabalho floresça e a prosperidade chegue com merecimento e gratidão.",
+    protecao:"Ogum guerreiro forma um escudo ao redor de você e dos seus. Onde há fé sólida, nenhuma negatividade atravessa.",
+    gratidao:"Oxalá recebe sua gratidão como a mais bela das oferendas. A energia do agradecimento multiplica as bênçãos que ainda estão por vir."
+  };
+  const elementos={
+    caminhos:["🍿 Pipoca","🫒 Dendê","🕯️ Vela vermelha","🪙 Moedas"],
+    saude:["🕯️ Vela branca","💧 Água","🌿 Ervas medicinais"],
+    amor:["🌹 Rosas","🕯️ Vela rosa","🍯 Mel"],
+    prosperidade:["🍯 Mel","🪙 Moedas","🕯️ Vela amarela","🌻 Girassol"],
+    protecao:["🧂 Sal grosso","🕯️ Vela preta","🌿 Defumador"],
+    gratidao:["🕯️ Vela branca","🌸 Flores brancas","💧 Água"]
+  };
+  return{status:"APROVADO",tipo,texto_ritual:textos[tipo],elementos:elementos[tipo]};
 }
 
-async function enviarOferenda() {
-  const texto = document.getElementById("pedido-texto").value.trim();
-  if (!texto) {
-    alert("Por favor, digite sua intenção antes de firmar.");
-    return;
-  }
-
-  definirBotaoEstado("enviando");
-
-  const idFalso = crypto.randomUUID();
-  const mockTextoRitual = `Sua oferenda virtual de ${categoriaSelecionada.toUpperCase()} foi firmada com sucesso no plano astral. Que os guias tragam as respostas e o axé necessário para sua jornada.`;
-  const mockElementos = `Vela correspondente à linha, fluidos espirituais e elementos da natureza em formato digital.`;
-
-  try {
-    // Tenta enviar para o Worker real
-    const res = await fetch(`${CONFIG.WORKER_URL}/classificar`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ texto })
-    });
-    
-    const resultado = await res.json();
-    
-    if (resultado.aprovado) {
-      const novaOferenda = {
-        id: idFalso,
-        data_criacao: new Date().toISOString(),
-        intencao: texto,
-        tipo_oferenda: resultado.categoria || categoriaSelecionada,
-        latitude: coordenadasSelecionadas.lat,
-        longitude: coordenadasSelecionadas.lng,
-        texto_ritual: resultado.texto_ritual,
-        elementos: resultado.elementos,
-        status_ativa: 1
-      };
-
-      await fetch(`${CONFIG.WORKER_URL}/salvar`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(novaOferenda)
+async function salvarESobreporMapa(resultado){
+  const oferenda={
+    id:crypto.randomUUID(),
+    intencao:document.getElementById("pedido-texto").value.trim(),
+    tipo:resultado.tipo,
+    lat:userLat+(Math.random()-.5)*.003,
+    lng:userLng+(Math.random()-.5)*.003,
+    texto_ritual:resultado.texto_ritual,
+    elementos:resultado.elementos,
+    expira_em:new Date(Date.now()+72*36e5).toISOString()
+  };
+  plotarOferenda({...oferenda,texto:oferenda.texto_ritual,expira:"72h"});
+  if(!DEMO_MODE){
+    try{
+      await fetch(`${CONFIG.WORKER_URL}/salvar`,{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(oferenda)
       });
-
-      exibirSucesso(idFalso, resultado.texto_ritual, resultado.elementos);
-    } else {
-      alert(resultado.texto_ritual || "Pedido não aceito.");
-      window.location.href = `praticantes.html?motivo=recusa`;
-    }
-
-  } catch (err) {
-    // MODO DE SEGURANÇA: Se o Worker der erro por não estar configurado, roda localmente para você ver o funcionamento visual
-    console.log("Worker não configurado ainda. Rodando modo demonstrativo local.");
-    exibirSucesso(idFalso, mockTextoRitual, mockElementos);
+    }catch(e){console.warn("Falha ao salvar:",e)}
   }
 }
 
-function exibirSucesso(id, ritual, elementos) {
-  const urlShare = `${window.location.origin}${window.location.pathname}?id=${id}`;
-  markerPreview.bindPopup(`<b>Axé Firmado!</b><br>${ritual}`).openPopup();
-  markerPreview = null;
+async function salvarPedidoNegado(texto){
+  if(!DEMO_MODE){
+    try{
+      await fetch(`${CONFIG.WORKER_URL}/salvar-negado`,{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({texto,lat:userLat,lng:userLng,ts:new Date().toISOString()})
+      });
+    }catch(e){console.warn("Falha ao salvar negado:",e)}
+  }
+}
 
-  document.getElementById("painel-fluxo").innerHTML = `
-    <div class="sucesso-box">
-      <h3 class="cinzel" style="color: var(--gold); margin-bottom: 0.5rem;">Axé Firmado! ✨</h3>
-      <p style="font-size: 0.95rem; margin-bottom: 1rem; line-height: 1.4;">${ritual}</p>
-      <p style="font-size: 0.8rem; color: var(--text-dim); font-style: italic;">Elementos digitais: ${elementos}</p>
-      
-      <div style="margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1rem; text-align: left;">
-        <label class="mono" style="font-size: 0.7rem; color: var(--gold); display:block; margin-bottom: 0.3rem;">LINK DA OFERENDA (COMPARTILHAMENTO):</label>
-        <div class="share-input-group">
-          <input type="text" class="share-url" value="${urlShare}" id="share-input" readonly>
-          <button class="btn-copy" onclick="copiarLink()">Copiar</button>
-        </div>
+function mostrarEstado(estado){
+  document.getElementById("form-card").style.display=estado==="form"?"block":"none";
+  document.getElementById("loading").classList.toggle("active",estado==="loading");
+  document.getElementById("resultado-aprovado").classList.toggle("active",estado==="aprovado");
+  document.getElementById("resultado-negado").classList.toggle("active",estado==="negado");
+}
+
+function mostrarAprovado(r){
+  const t=TIPOS[r.tipo]||TIPOS.caminhos;
+  document.getElementById("prato-emoji").textContent=t.emoji;
+  document.getElementById("orixas-nome").textContent=t.orixas;
+  document.getElementById("texto-ritual").textContent=r.texto_ritual;
+  document.getElementById("elementos-lista").innerHTML=(r.elementos||[]).map(e=>`<span class="elemento-tag">${e}</span>`).join("");
+  document.getElementById("afiliados-grid").innerHTML=t.afiliados.slice(0,3).map(k=>{
+    const a=AFILIADOS[k];
+    return a?`<a class="afiliado-item" href="${a.link}" target="_blank" rel="noopener"><div class="afiliado-icon">${a.icon}</div><div class="afiliado-name">${a.nome}</div><div class="afiliado-price">${a.preco}</div></a>`:"";
+  }).join("");
+  mostrarEstado("aprovado");
+}
+
+function mostrarNegado(r){
+  document.getElementById("negado-msg").textContent=r.mensagem_negacao;
+  document.getElementById("praticantes-lista").innerHTML=PRATICANTES_DEMO.map(p=>`
+    <a class="praticante-card" href="https://wa.me/${p.wa}" target="_blank" rel="noopener">
+      <div class="praticante-avatar">${p.avatar}</div>
+      <div class="praticante-info">
+        <div class="praticante-nome">${p.nome}</div>
+        <div class="praticante-tipo">${p.tipo}</div>
+        <div class="praticante-stars">${"★".repeat(p.estrelas)}${"☆".repeat(5-p.estrelas)}</div>
+        <div class="praticante-dist">📍 ${p.dist} de você</div>
       </div>
-      <button class="btn-firmar" style="margin-top: 1.5rem; background: var(--bg3); border: 1px solid var(--border);" onclick="window.location.reload()">Firmar Outra</button>
-    </div>
-  `;
+      ${p.destaque?'<div class="praticante-badge">destaque</div>':""}
+    </a>`).join("");
+  mostrarEstado("negado");
 }
 
-function copiarLink() {
-  const input = document.getElementById("share-input");
-  input.select();
-  document.execCommand("copy");
-  alert("Link de compartilhamento copiado com sucesso!");
+function novoPedido(){
+  document.getElementById("pedido-texto").value="";
+  document.getElementById("char-n").textContent="0";
+  document.getElementById("email-visitante").value="";
+  document.querySelectorAll(".tipo-btn").forEach(b=>b.classList.remove("active"));
+  tipoSelecionado=null;
+  mostrarEstado("form");
 }
 
-async function checarLinkCompartilhado() {
-  const params = new URLSearchParams(window.location.search);
-  const id = params.get('id');
-  if (!id) return;
-
-  document.getElementById("status-passo").innerHTML = "🔮 <b>Carregando oferenda compartilhada via link...</b>";
-
-  try {
-    const res = await fetch(`${CONFIG.WORKER_URL}/buscar-oferenda?id=${id}`);
-    const d = await res.json();
-    if (d && d.latitude) {
-      const lat = parseFloat(d.latitude);
-      const lng = parseFloat(d.longitude);
-      mapa.setView([lat, lng], 16);
-      L.marker([lat, lng], {
-        icon: L.divIcon({ html: `<div style="font-size:32px;">${ICONES_MAPA[d.tipo_oferenda] || '✨'}</div>`, iconSize:[32,32] })
-      }).addTo(mapa).bindPopup(`<b>Oferenda Compartilhada</b><br>"${d.intencao}"<br><small>${d.texto_ritual}</small>`).openPopup();
-    }
-  } catch(e) {
-    // Fallback de teste se o link veio mas não há Worker
-    document.getElementById("status-passo").innerHTML = "ℹ️ Você acessou via link compartilhado. Modo de demonstração ativo.";
-  }
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  inicializarMapa();
-  configurarEventos();
-  checarLinkCompartilhado();
-});
+window.addEventListener("DOMContentLoaded",()=>{iniciarMapa();mostrarEstado("form")});
 </script>
 </body>
 </html>
