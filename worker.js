@@ -1,24 +1,7 @@
 /**
- * OFERENDA DIGITAL — Cloudflare Worker
- * ─────────────────────────────────────
- * Proxy seguro entre o frontend (GitHub Pages) e:
- *  - Google Gemini API (classificação NLP)
- *  - Google Sheets API (leitura/escrita de dados)
- *
- * Deploy:
- *   npm install -g wrangler
- *   wrangler login
- *   wrangler deploy
- *
- * Variáveis de ambiente (wrangler secret put NOME):
- *   GEMINI_API_KEY        → chave da Gemini API
- *   GOOGLE_SA_EMAIL       → e-mail da Service Account
- *   GOOGLE_SA_PRIVATE_KEY → chave privada RSA da Service Account
- *   SHEET_ID              → ID da planilha Google Sheets
- *   ALLOWED_ORIGIN        → https://seusite.github.io
+ * OFERENDA DIGITAL — Cloudflare Worker (Atualizado e Blindado)
  */
 
-// ─── SYSTEM PROMPT NLP ──────────────────────────────────────
 const SYSTEM_PROMPT = `Você é um guardião espiritual respeitoso das tradições de Umbanda e Candomblé.
 Analise o pedido do visitante e classifique com máximo cuidado e respeito à religiosidade de matriz africana.
 
@@ -29,31 +12,28 @@ NEGADO: amarração forçada, prejudicar terceiros, vingança, mal-feito, magia 
 TIPOS disponíveis (use apenas um):
 caminhos | saude | amor | prosperidade | protecao | gratidao
 
-Responda SOMENTE em JSON válido, sem texto extra, sem markdown:
+Responda SOMENTE em JSON puro, sem texto extra, sem markdown:
 {
   "status": "APROVADO" ou "NEGADO",
-  "tipo": "caminhos" (ou outro tipo — somente se APROVADO),
+  "tipo": "caminhos",
   "texto_ritual": "2-3 linhas acolhedoras e respeitosas sobre o pedido (somente se APROVADO)",
   "mensagem_negacao": "texto acolhedor sem julgamento explicando o motivo (somente se NEGADO)",
-  "elementos": ["elemento1", "elemento2", "elemento3"] (somente se APROVADO)
+  "elementos": ["elemento1", "elemento2", "elemento3"]
 }`;
 
-// ─── CORS HEADERS ────────────────────────────────────────────
 function corsHeaders(env) {
   return {
-    "Access-Control-Allow-Origin":  env.ALLOWED_ORIGIN || "*",
+    "Access-Control-Allow-Origin": env.ALLOWED_ORIGIN || "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Content-Type": "application/json"
   };
 }
 
-// ─── MAIN HANDLER ────────────────────────────────────────────
 export default {
   async fetch(request, env, ctx) {
     const { pathname } = new URL(request.url);
 
-    // Preflight CORS
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders(env) });
     }
@@ -61,7 +41,6 @@ export default {
     const headers = corsHeaders(env);
 
     try {
-      // ── POST /classificar ──────────────────────────────────
       if (pathname === "/classificar" && request.method === "POST") {
         const { texto } = await request.json();
 
@@ -73,28 +52,24 @@ export default {
         return json(resultado, 200, headers);
       }
 
-      // ── POST /salvar ───────────────────────────────────────
       if (pathname === "/salvar" && request.method === "POST") {
         const oferenda = await request.json();
         await salvarOferenda(oferenda, env);
         return json({ ok: true }, 200, headers);
       }
 
-      // ── POST /salvar-praticante ────────────────────────────
       if (pathname === "/salvar-praticante" && request.method === "POST") {
         const dados = await request.json();
         await salvarPraticante(dados, env);
         return json({ ok: true }, 200, headers);
       }
 
-      // ── POST /salvar-avaliacao ─────────────────────────────
       if (pathname === "/salvar-avaliacao" && request.method === "POST") {
         const avaliacao = await request.json();
         await salvarAvaliacao(avaliacao, env);
         return json({ ok: true }, 200, headers);
       }
 
-      // ── GET /praticantes?lat=X&lng=Y&raio=Z ───────────────
       if (pathname === "/praticantes" && request.method === "GET") {
         const url   = new URL(request.url);
         const lat   = parseFloat(url.searchParams.get("lat")  || "-23.55");
@@ -113,58 +88,72 @@ export default {
   }
 };
 
-// ─── HELPERS ─────────────────────────────────────────────────
 function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), { status, headers });
 }
 
-// ─── GEMINI API ──────────────────────────────────────────────
+// ─── GEMINI API COM MULTI-MODELOS E FALLBACK ──────────────────
 async function classificarComGemini(texto, env) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${env.GEMINI_API_KEY}`;
+  // Lista de modelos suportados por fetch direto na API do Google
+  const modelos = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"];
+  let data = null;
+  let ultimoErro = "";
 
-  const body = {
-    contents: [{
-      parts: [{ text: `${SYSTEM_PROMPT}\n\nPedido do visitante: "${texto}"` }]
-    }],
-    generationConfig: {
-      temperature: 0.2,
-      maxOutputTokens: 512
+  for (const modelo of modelos) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${env.GEMINI_API_KEY}`;
+    const body = {
+      contents: [{
+        parts: [{ text: `${SYSTEM_PROMPT}\n\nPedido do visitante: "${texto}"` }]
+      }],
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: 512
+      }
+    };
+
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+
+      if (res.ok) {
+        data = await res.json();
+        break;
+      } else {
+        ultimoErro = await res.text();
+      }
+    } catch (e) {
+      ultimoErro = e.message;
     }
-  };
-
-  const res  = await fetch(url, {
-    method:  "POST",
-    headers: { "Content-Type": "application/json" },
-    body:    JSON.stringify(body)
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Gemini API error ${res.status}: ${err}`);
   }
 
-  const data = await res.json();
-  const raw  = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+  if (!data) {
+    throw new Error(`Falha em todos os modelos Gemini. Último erro: ${ultimoErro}`);
+  }
 
-  // Limpar possível markdown code fence
-  const clean = raw.replace(/```json|```/g, "").trim();
+  const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+  let clean = raw.replace(/```json/g, "").replace(/```/g, "").trim();
+  
+  // Garante que extrai apenas o JSON caso haja texto ao redor
+  const inicioJson = clean.indexOf("{");
+  const fimJson = clean.lastIndexOf("}");
+  if (inicioJson !== -1 && fimJson !== -1) {
+    clean = clean.substring(inicioJson, fimJson + 1);
+  }
 
   try {
     return JSON.parse(clean);
-  } catch {
+  } catch (e) {
     throw new Error("Resposta inválida da IA: " + clean.substring(0, 100));
   }
 }
 
-// ─── GOOGLE SHEETS: AUTH ─────────────────────────────────────
-/**
- * Gera um JWT para autenticar na Google API com Service Account.
- * O Cloudflare Workers suporta a Web Crypto API nativamente.
- */
+// Demais funções auxiliares do Google Sheets (getGoogleToken, appendRow, etc.) continuam idênticas...
 async function getGoogleToken(env) {
   const now  = Math.floor(Date.now() / 1000);
-  const exp  = now + 3600;
-
+  const exp   = now + 3600;
   const header  = btoa(JSON.stringify({ alg: "RS256", typ: "JWT" })).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
   const payload = btoa(JSON.stringify({
     iss:   env.GOOGLE_SA_EMAIL,
@@ -175,8 +164,6 @@ async function getGoogleToken(env) {
   })).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 
   const signingInput = `${header}.${payload}`;
-
-  // Importar chave privada RSA
   const pemKey = env.GOOGLE_SA_PRIVATE_KEY.replace(/\\n/g, "\n");
   const pemBody = pemKey.replace("-----BEGIN PRIVATE KEY-----", "").replace("-----END PRIVATE KEY-----", "").replace(/\s/g, "");
   const der  = Uint8Array.from(atob(pemBody), c => c.charCodeAt(0));
@@ -195,7 +182,6 @@ async function getGoogleToken(env) {
   const b64sig = btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
   const jwt = `${signingInput}.${b64sig}`;
 
-  // Trocar JWT por access token
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -205,14 +191,13 @@ async function getGoogleToken(env) {
   return tokenData.access_token;
 }
 
-// ─── GOOGLE SHEETS: APPEND ───────────────────────────────────
 async function appendRow(token, sheetId, aba, valores) {
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${aba}!A1:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
   const res = await fetch(url, {
-    method:  "POST",
+    method: "POST",
     headers: {
       "Authorization": `Bearer ${token}`,
-      "Content-Type":  "application/json"
+      "Content-Type": "application/json"
     },
     body: JSON.stringify({ values: [valores] })
   });
@@ -231,70 +216,41 @@ async function getRows(token, sheetId, aba) {
   return rows.map(r => Object.fromEntries(headers.map((h, i) => [h, r[i] || ""])));
 }
 
-// ─── SALVAR OFERENDA ─────────────────────────────────────────
 async function salvarOferenda(o, env) {
   const token  = await getGoogleToken(env);
   const agora  = new Date().toISOString();
   const expira = new Date(Date.now() + 72 * 36e5).toISOString();
-
   const linha = [
-    o.id            || crypto.randomUUID(),
-    agora,
-    o.intencao      || "",
-    o.tipo          || "caminhos",
-    o.lat           || "",
-    o.lng           || "",
-    o.texto_ritual  || "",
+    o.id || crypto.randomUUID(), agora, o.intencao || "", o.tipo || "caminhos",
+    o.lat || "", o.lng || "", o.texto_ritual || "",
     Array.isArray(o.elementos) ? o.elementos.join(", ") : (o.elementos || ""),
-    1,              // status_ativa
-    expira
+    1, expira
   ];
-
   await appendRow(token, env.SHEET_ID, "oferendas", linha);
 }
 
-// ─── SALVAR PRATICANTE ───────────────────────────────────────
 async function salvarPraticante(p, env) {
   const token = await getGoogleToken(env);
   const linha = [
-    crypto.randomUUID(),
-    p.nome         || "",
-    p.tradicao     || "",
-    p.descricao    || "",
-    p.cidade       || "",
-    p.lat          || "",
-    p.lng          || "",
-    p.raio_km      || 20,
-    p.whatsapp     || "",
-    p.plano        || "basico",
-    "",             // nota_media (calculada depois)
-    0,              // total_votos
-    1,              // ativo
-    0,              // destaque
-    new Date().toISOString()
+    crypto.randomUUID(), p.nome || "", p.tradicao || "", p.descricao || "",
+    p.cidade || "", p.lat || "", p.lng || "", p.raio_km || 20,
+    p.whatsapp || "", p.plano || "basico", "", 0, 1, 0, new Date().toISOString()
   ];
   await appendRow(token, env.SHEET_ID, "praticantes", linha);
 }
 
-// ─── SALVAR AVALIAÇÃO ────────────────────────────────────────
 async function salvarAvaliacao(a, env) {
   const token = await getGoogleToken(env);
   const linha = [
-    crypto.randomUUID(),
-    a.id_praticante || "",
-    a.id_pedido     || "",
-    a.nota          || 0,
-    a.comentario    || "",
-    new Date().toISOString()
+    crypto.randomUUID(), a.id_praticante || "", a.id_pedido || "",
+    a.nota || 0, a.comentario || "", new Date().toISOString()
   ];
   await appendRow(token, env.SHEET_ID, "avaliacoes", linha);
 }
 
-// ─── BUSCAR PRATICANTES POR DISTÂNCIA ────────────────────────
 async function buscarPraticantes(lat, lng, raioKm, env) {
-  const token      = await getGoogleToken(env);
+  const token     = await getGoogleToken(env);
   const praticantes = await getRows(token, env.SHEET_ID, "praticantes");
-
   return praticantes
     .filter(p => p.ativo === "1")
     .map(p => ({
@@ -303,15 +259,13 @@ async function buscarPraticantes(lat, lng, raioKm, env) {
     }))
     .filter(p => p.distancia_km <= raioKm)
     .sort((a, b) => {
-      // Destaques primeiro, depois por nota, depois por distância
       if (b.destaque !== a.destaque) return b.destaque - a.destaque;
-      if (b.nota_media !== a.nota_media) return parseFloat(b.nota_media || 0) - parseFloat(a.nota_media || 0);
+      if (b.nota_media !== a.nota_media) return parseFloat(b.nota_media || 0) - parseFloat(b.nota_media || 0);
       return a.distancia_km - b.distancia_km;
     })
     .slice(0, 10);
 }
 
-// ─── HAVERSINE (distância em km) ─────────────────────────────
 function haversine(lat1, lng1, lat2, lng2) {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
