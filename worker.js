@@ -52,9 +52,9 @@ export default {
           return new Response(JSON.stringify({ error: "GEMINI_API_KEY não configurada no Cloudflare" }), { status: 500, headers });
         }
 
-        // Endpoint estável v1 com gemini-pro
-        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${env.GEMINI_API_KEY}`;
-        
+        // Modelos em ordem de preferência (podem ser trocados no Cloudflare via GEMINI_MODEL)
+        const modelos = [env.GEMINI_MODEL || "gemini-3.8-flash", "gemini-3.8-flash-lite", "gemini-3.1-flash"];
+
         const geminiPayload = {
           contents: [
             {
@@ -64,17 +64,30 @@ export default {
           ],
           generationConfig: {
             temperature: 0.7,
-            maxOutputTokens: 512
+            maxOutputTokens: 4096
           }
         };
 
-        const res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(geminiPayload)
-        });
-
-        const data = await res.json();
+        let res, data;
+        for (const modelo of modelos) {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${env.GEMINI_API_KEY}`;
+          // até 3 tentativas por modelo em caso de sobrecarga (503/429)
+          for (let tentativa = 0; tentativa < 3; tentativa++) {
+            res = await fetch(url, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(geminiPayload)
+            });
+            data = await res.json();
+            if (res.ok) break;
+            if (res.status === 503 || res.status === 429) {
+              await new Promise(r => setTimeout(r, 800 * (tentativa + 1)));
+              continue;
+            }
+            break; // outro erro (ex.: 404): passa para o próximo modelo
+          }
+          if (res.ok) break;
+        }
 
         if (!res.ok) {
           return new Response(JSON.stringify({ error: "Erro na API do Google", details: data }), { status: 500, headers });
