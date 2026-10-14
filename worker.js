@@ -92,10 +92,13 @@ function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), { status, headers });
 }
 
-// ─── GEMINI API COM MULTI-MODELOS E FALLBACK ──────────────────
+// ─── GEMINI API COM MULTI-MODELOS E LOGS DETALHADOS ──────────────────
 async function classificarComGemini(texto, env) {
-  // Lista de modelos suportados por fetch direto na API do Google
-  const modelos = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"];
+  if (!env.GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY não está configurada nas variáveis de ambiente do Cloudflare.");
+  }
+
+  const modelos = ["gemini-1.5-flash", "gemini-1.5-pro"];
   let data = null;
   let ultimoErro = "";
 
@@ -123,20 +126,21 @@ async function classificarComGemini(texto, env) {
         break;
       } else {
         ultimoErro = await res.text();
+        console.error(`Erro com o modelo ${modelo}:`, ultimoErro);
       }
     } catch (e) {
       ultimoErro = e.message;
+      console.error(`Exceção de rede com o modelo ${modelo}:`, e.message);
     }
   }
 
   if (!data) {
-    throw new Error(`Falha em todos os modelos Gemini. Último erro: ${ultimoErro}`);
+    throw new Error(`Falha em todos os modelos Gemini. Detalhe do último erro: ${ultimoErro}`);
   }
 
   const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
   let clean = raw.replace(/```json/g, "").replace(/```/g, "").trim();
   
-  // Garante que extrai apenas o JSON caso haja texto ao redor
   const inicioJson = clean.indexOf("{");
   const fimJson = clean.lastIndexOf("}");
   if (inicioJson !== -1 && fimJson !== -1) {
@@ -146,13 +150,13 @@ async function classificarComGemini(texto, env) {
   try {
     return JSON.parse(clean);
   } catch (e) {
-    throw new Error("Resposta inválida da IA: " + clean.substring(0, 100));
+    throw new Error("Resposta inválida da IA (JSON malformado): " + clean.substring(0, 100));
   }
 }
 
-// Demais funções auxiliares do Google Sheets (getGoogleToken, appendRow, etc.) continuam idênticas...
+// ─── INTEGRAÇÃO GOOGLE SHEETS ──────────────────
 async function getGoogleToken(env) {
-  const now  = Math.floor(Date.now() / 1000);
+  const now   = Math.floor(Date.now() / 1000);
   const exp   = now + 3600;
   const header  = btoa(JSON.stringify({ alg: "RS256", typ: "JWT" })).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
   const payload = btoa(JSON.stringify({
