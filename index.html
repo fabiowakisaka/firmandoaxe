@@ -237,10 +237,8 @@ const CONFIG = {
   GID:        "0"
 };
 
-const DEMO_MODE = false;
-  
 const TIPOS = {
-  caminhos:    {emoji:"🛤️",cor:"#c97b3a",orixas:"Exu e Pombagira",  afiliados:["vela-vermelha","pipoca","dende"]},
+  caminhos:    {emoji:"🛤️",cor:"#c97b3a",orixas:"Exu e Pombagira",   afiliados:["vela-vermelha","pipoca","dende"]},
   saude:       {emoji:"🌿",cor:"#3B8BD4",orixas:"Oxalá e Omulu",    afiliados:["vela-branca","ervas","quartinha"]},
   amor:        {emoji:"🌹",cor:"#D4537E",orixas:"Oxum",             afiliados:["vela-rosa","rosas","mel"]},
   prosperidade:{emoji:"🌻",cor:"#639922",orixas:"Ogum e Oxóssi",    afiliados:["vela-amarela","mel","moedas"]},
@@ -250,10 +248,10 @@ const TIPOS = {
 
 const AFILIADOS = {
   "vela-vermelha":{icon:"🕯️",nome:"Vela Vermelha 7 Dias",preco:"R$ 4,90",link:"#"},
-  "vela-branca":  {icon:"🕯️",nome:"Vela Branca 7 Dias",  preco:"R$ 4,90",link:"#"},
+  "vela-branca":  {icon:"🕯️",nome:"Vela Branca 7 Dias",   preco:"R$ 4,90",link:"#"},
   "vela-rosa":    {icon:"🕯️",nome:"Vela Rosa 7 Dias",    preco:"R$ 4,90",link:"#"},
   "vela-amarela": {icon:"🕯️",nome:"Vela Amarela 7 Dias", preco:"R$ 4,90",link:"#"},
-  "vela-preta":   {icon:"🕯️",nome:"Vela Preta 7 Dias",   preco:"R$ 4,90",link:"#"},
+  "vela-preta":   {icon:"🕯️",nome:"Vela Preta 7 Dias",    preco:"R$ 4,90",link:"#"},
   "pipoca":       {icon:"🍿",nome:"Pipoca p/ Oferenda",  preco:"R$ 3,50",link:"#"},
   "dende":        {icon:"🫒",nome:"Azeite de Dendê",     preco:"R$ 8,90",link:"#"},
   "ervas":        {icon:"🌿",nome:"Kit Ervas Sagradas",  preco:"R$ 12,90",link:"#"},
@@ -268,7 +266,7 @@ const AFILIADOS = {
 
 const PRATICANTES_DEMO=[
   {nome:"Mãe Zélia de Oxum",    tipo:"Umbanda · Consulta de Búzios", estrelas:5,dist:"2.3km",destaque:true, avatar:"🌸",wa:"5511999990001"},
-  {nome:"Pai João de Ogum",     tipo:"Candomblé · Descarrego",       estrelas:5,dist:"4.1km",destaque:false,avatar:"⚔️",wa:"5511999990002"},
+  {nome:"Pai João de Ogum",     tipo:"Candomblé · Descarrego",        estrelas:5,dist:"4.1km",destaque:false,avatar:"⚔️",wa:"5511999990002"},
   {nome:"Mãe Sandra de Iemanjá",tipo:"Umbanda · Limpeza Espiritual", estrelas:4,dist:"5.8km",destaque:false,avatar:"🌊",wa:"5511999990003"}
 ];
 
@@ -310,7 +308,6 @@ function iniciarMapa(){
 
 function atualizarPinoAoVivo() {
   if (!coordenadasSelecionadas) return;
-  // CORREÇÃO: Pega o emoji real e dinâmico da categoria selecionada pelo usuário na hora
   const t = TIPOS[tipoSelecionado] || {emoji: "🌹", cor: "#f5c050"};
   
   const icon = L.divIcon({
@@ -389,18 +386,8 @@ async function enviarPedido(){
   document.getElementById("btn-enviar").disabled=true;
   mostrarEstado("loading");
   
-  try{
-    let resultado;
-    if (DEMO_MODE) {
-      resultado = await classificarDemo(texto);
-    } else {
-      try {
-        resultado = await classificarViaWorker(texto);
-      } catch(apiErr) {
-        console.warn("Worker em manutenção. Rodando local.");
-        resultado = await classificarDemo(texto);
-      }
-    }
+  try {
+    const resultado = await classificarViaWorker(texto);
 
     if(resultado.status === "APROVADO" || resultado.aprovado){
       const dataNormalizada = {
@@ -412,15 +399,15 @@ async function enviarPedido(){
       
       mostrarAprovado(dataNormalizada);
       salvarESobreporMapa(dataNormalizada);
-    }else{
+    } else {
       mostrarNegado(resultado);
       salvarPedidoNegado(texto);
     }
-  }catch(e){
+  } catch(e) {
     console.error(e);
     mostrarEstado("form");
-    alert("Erro na conexão astral. Tente novamente em instantes.");
-  }finally{
+    alert("Erro na conexão com a IA: " + e.message);
+  } finally {
     document.getElementById("btn-enviar").disabled=false;
   }
 }
@@ -432,35 +419,6 @@ async function classificarViaWorker(texto){
   });
   if(!res.ok)throw new Error("Worker error: " + res.status);
   return res.json();
-}
-
-async function classificarDemo(texto){
-  await new Promise(r=>setTimeout(r,1200));
-  const t=texto.toLowerCase();
-  const neg=["amarrar","amarração","prejudicar","machucar","vingança","destruir","morte","mal feito","mal-feito"];
-  if(neg.some(p=>t.includes(p))){
-    return{status:"NEGADO",mensagem_negacao:"A espiritualidade de Umbanda e Candomblé fundamenta-se na evolução e no amor. Pedidos que interfiram no livre-arbítrio ou visem ferir terceiros não encontram amparo na luz dos Orixás. Procure ajuda qualificada para proteção."};
-  }
-  
-  const textos={
-    caminhos:"Que Exu abra seus caminhos legítimos e Pombagira traga discernimento e proteção a cada passo da sua caminhada terrena.",
-    saude:"Oxalá e Omulu acolhem sua prece. Que fluidos de cura e vitalidade transbordem, limpando e restaurando seu equilíbrio físico e mental.",
-    amor:"Mãe Oxum recebe sua intenção nas águas doces. Que o amor legítimo floresça em sua vida com harmonia, afeto e respeito.",
-    prosperidade:"Ogum e Oxóssi cortam as dificuldades e abrem as matas da fartura. Que a colheita do seu trabalho traga prosperity justa.",
-    protecao:"Pai Ogum estende seu escudo de aço ao seu redor. Sob fé firme e pensamentos elevados, demandas negativas não prosperam.",
-    gratidao:"A energia do agradecimento sela suas bênçãos na lei do retorno. Oxalá multiplica cada grama de gratidão enviada ao plano astral."
-  };
-  
-  const elementos={
-    caminhos:["🍿 Pipoca","🫒 Azeite de Dendê","🕯️ Vela Vermelha","🪙 Moedas"],
-    saude:["🕯️ Vela Branca","💧 Água Mineral","🌿 Ervas Frescas"],
-    amor:["🌹 Pétalas de Rosas","🕯️ Vela Rosa","🍯 Mel Puro"],
-    prosperidade:["🍯 Mel","🪙 Moedas Correntes","🕯️ Vela Amarela","🌻 Girassol"],
-    protecao:["🧂 Sal Grosso","🕯️ Vela Preta","🌿 Defumador de Arruda"],
-    gratidao:["🕯️ Vela Branca","🌸 Flores Claras","💧 Água Fluida"]
-  };
-  
-  return{status:"APROVADO",tipo:tipoSelecionado,texto_ritual:textos[tipoSelecionado],elementos:elementos[tipoSelecionado]};
 }
 
 async function salvarESobreporMapa(resultado){
@@ -476,12 +434,10 @@ async function salvarESobreporMapa(resultado){
     expira_em: new Date(Date.now()+72*36e5).toISOString()
   };
   
-  // CORREÇÃO CRÍTICA: Plota o pino final e força o mapa a dar foco exato nas coordenadas geradas
   const pinoInstanciado = plotarOferenda({...oferenda,texto:oferenda.texto_ritual,expira:"72h"});
   
   if (markerPreview) { mapaInstance.removeLayer(markerPreview); markerPreview = null; }
 
-  // Executa uma animação suave de aproximação focando exatamente onde a oferenda foi assentada
   mapaInstance.setView([coordenadasSelecionadas.lat, coordenadasSelecionadas.lng], 15);
   setTimeout(() => { pinoInstanciado.openPopup(); }, 400);
 
@@ -514,7 +470,7 @@ function mostrarEstado(estado){
 
 function mostrarAprovado(r){
   const t=TIPOS[r.tipo]||TIPOS.caminhos;
-  document.getElementById("prato-emoji").textContent=t.emoji; // Altera o grande emoji de resultado para bater com a categoria real da IA
+  document.getElementById("prato-emoji").textContent=t.emoji;
   document.getElementById("orixas-nome").textContent=t.orixas;
   document.getElementById("texto-ritual").textContent=r.texto_ritual;
   document.getElementById("elementos-lista").innerHTML=(r.elementos||[]).map(e=>'<span class="elemento-tag">' + e + '</span>').join("");
