@@ -1,5 +1,5 @@
 /**
- * OFERENDA DIGITAL — Cloudflare Worker (Atualizado e Blindado)
+ * OFERENDA DIGITAL — Cloudflare Worker (Atualizado e Blindado com Debug)
  */
 
 const SYSTEM_PROMPT = `Você é um guardião espiritual respeitoso das tradições de Umbanda e Candomblé.
@@ -42,14 +42,19 @@ export default {
 
     try {
       if (pathname === "/classificar" && request.method === "POST") {
-        const { texto } = await request.json();
+        try {
+          const { texto } = await request.json();
 
-        if (!texto || texto.trim().length < 5) {
-          return json({ error: "Texto muito curto" }, 400, headers);
+          if (!texto || texto.trim().length < 5) {
+            return json({ error: "Texto muito curto" }, 400, headers);
+          }
+
+          const resultado = await classificarComGemini(texto.trim(), env);
+          return json(resultado, 200, headers);
+        } catch (innerErr) {
+          console.error("Erro detalhado em /classificar:", innerErr);
+          return json({ error: "Erro na IA", detail: innerErr.message }, 500, headers);
         }
-
-        const resultado = await classificarComGemini(texto.trim(), env);
-        return json(resultado, 200, headers);
       }
 
       if (pathname === "/salvar" && request.method === "POST") {
@@ -98,7 +103,6 @@ async function classificarComGemini(texto, env) {
     throw new Error("GEMINI_API_KEY não está configurada nas variáveis de ambiente do Cloudflare.");
   }
 
-  // Utilizando o modelo oficial atualizado da Google v1beta
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${env.GEMINI_API_KEY}`;
   
   const body = {
@@ -124,8 +128,7 @@ async function classificarComGemini(texto, env) {
 
   if (!res.ok) {
     const erroTxt = await res.text();
-    console.error("Erro na API do Gemini:", erroTxt);
-    throw new Error(`Falha na API do Gemini (${res.status}): ${erroTxt}`);
+    throw new Error(`Google API Error (${res.status}): ${erroTxt}`);
   }
 
   const data = await res.json();
