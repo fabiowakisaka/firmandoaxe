@@ -177,8 +177,8 @@ footer a:hover{color:var(--amber)}
 
   <div class="loading-overlay" id="loading">
     <div class="loading-candle">🕯️</div>
-    <div class="loading-text">Os guias estão recebendo seu pedido...</div>
-    <div class="loading-sub">A IA está gerando sua oferenda personalizada</div>
+    <div class="loading-text" id="loading-titulo">Os guias estão recebendo seu pedido...</div>
+    <div class="loading-sub" id="loading-sub">A IA está gerando sua oferenda personalizada</div>
   </div>
 
   <div class="resultado" id="resultado-aprovado">
@@ -208,6 +208,20 @@ footer a:hover{color:var(--amber)}
       ✨ O mapa foi centralizado na sua oferenda firmada.
     </div>
     <button class="btn-nova" onclick="novoPedido()">+ Fazer nova oferenda</button>
+  </div>
+
+  <div class="resultado" id="resultado-compartilhado">
+    <div class="oferenda-visual">
+      <div style="text-align:center;margin-bottom:12px">
+        <span class="ia-badge">✦ oferenda compartilhada com você</span>
+      </div>
+      <div class="prato" id="comp-prato"></div>
+      <div class="orixas-nome" id="comp-orixas"></div>
+      <div class="texto-ritual" id="comp-texto"></div>
+      <div class="elementos-lista" id="comp-elementos"></div>
+      <div class="expira-info" id="comp-expira"></div>
+    </div>
+    <button class="btn-nova" onclick="irParaFormulario()">🕯️ Fazer minha própria oferenda</button>
   </div>
 
   <div class="resultado" id="resultado-negado">
@@ -324,14 +338,12 @@ function atualizarPinoAoVivo() {
 }
 
 async function carregarOferendasAtivas(){
-  if(!CONFIG.SHEET_ID||CONFIG.SHEET_ID==="SEU_SHEET_ID_AQUI") return;
   try{
-    const url = "https://docs.google.com/spreadsheets/d/" + CONFIG.SHEET_ID + "/gviz/tq?tqx=out:csv&gid=" + CONFIG.GID;
-    const res = await fetch(url);
-    const csv = await res.text();
-    const rows = csvParaObjetos(csv);
-    rows.filter(r=>r.status_ativa==="1").forEach(r=>plotarOferenda({
-      lat:parseFloat(r.lat),lng:parseFloat(r.lng),tipo:r.tipo,texto:r.texto_ritual,expira:r.expira_em
+    const res = await fetch(CONFIG.WORKER_URL + "/oferendas");
+    if(!res.ok) return;
+    const lista = await res.json();
+    lista.forEach(r=>plotarOferenda({
+      lat:r.lat,lng:r.lng,tipo:r.tipo,texto:r.texto_ritual,expira:r.expira_em
     }));
   }catch(e){console.log("Aguardando inserção de dados.")}
 }
@@ -466,6 +478,7 @@ function mostrarEstado(estado){
   document.getElementById("loading").classList.toggle("active",estado==="loading");
   document.getElementById("resultado-aprovado").classList.toggle("active",estado==="approved"||estado==="aprovado");
   document.getElementById("resultado-negado").classList.toggle("active",estado==="negado");
+  document.getElementById("resultado-compartilhado").classList.toggle("active",estado==="compartilhado");
 }
 
 function mostrarAprovado(r){
@@ -504,31 +517,60 @@ function copiarLinkCompartilhado() {
   alert("Link copiado com sucesso! Compartilhe o seu axé.");
 }
 
+function esc(s){
+  return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+let markerCompartilhado=null;
+
 async function checarParametrosCompartilhamento() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const idOferenda = urlParams.get("id");
-  if (!idOferenda) return;
-  document.getElementById("txt-fluxo").innerHTML = "🔮 <b>Buscando oferenda compartilhada...</b>";
+  const id = new URLSearchParams(window.location.search).get("id");
+  if (!id) return;
+
+  document.getElementById("loading-titulo").textContent = "Buscando a oferenda compartilhada...";
+  document.getElementById("loading-sub").textContent = "Aguarde um instante";
+  mostrarEstado("loading");
+
   try {
-    const response = await fetch(CONFIG.WORKER_URL + "/buscar-oferenda?id=" + idOferenda);
-    if (!response.ok) return;
-    const dados = await response.json();
-    if (dados && dados.latitude) {
-      const lat = parseFloat(dados.latitude || dados.lat);
-      const lng = parseFloat(dados.longitude || dados.lng);
-      const t = TIPOS[dados.tipo_oferenda || dados.tipo] || TIPOS.caminhos;
-      mapaInstance.setView([lat, lng], 15);
-      const sharedIcon = L.divIcon({
-        html: '<div style="font-size:32px; filter:drop-shadow(0 0 8px #f5c050);">' + t.emoji + '</div>',
-        iconSize: [32, 32], iconAnchor: [16, 32]
-      });
-      L.marker([lat, lng], { icon: sharedIcon }).addTo(mapaInstance)
-        .bindPopup("<b>Oferenda Ativa de Axé</b><br><small>\"" + dados.intencao + "\"</small>").openPopup();
-      document.getElementById("txt-fluxo").innerHTML = "👁️ Você abriu uma oferenda por link direto de compartilhamento.";
+    const res = await fetch(CONFIG.WORKER_URL + "/buscar-oferenda?id=" + encodeURIComponent(id));
+    if (!res.ok) throw new Error("não encontrada");
+    const d = await res.json();
+
+    const t = TIPOS[d.tipo] || TIPOS.caminhos;
+    document.getElementById("comp-prato").textContent = t.emoji;
+    document.getElementById("comp-orixas").textContent = t.orixas;
+    document.getElementById("comp-texto").textContent = d.texto_ritual;
+    document.getElementById("comp-elementos").innerHTML =
+      (d.elementos||[]).map(e=>'<span class="elemento-tag">' + esc(e) + '</span>').join("");
+    document.getElementById("comp-expira").textContent = d.expirada
+      ? "✦ Esta oferenda já cumpriu seu tempo de 72 horas ✦"
+      : "✦ Esta oferenda continua no mapa por mais " + calcularRestante(d.expira_em) + " ✦";
+
+    if (isFinite(d.lat) && isFinite(d.lng)) {
+      mapaInstance.setView([d.lat, d.lng], 15);
+      if (!d.expirada) {
+        // a oferenda ativa já aparece pelo carregamento normal; aqui destacamos a compartilhada
+        markerCompartilhado = plotarOferenda({lat:d.lat,lng:d.lng,tipo:d.tipo,texto:d.texto_ritual,expira:d.expira_em});
+        setTimeout(()=>markerCompartilhado.openPopup(), 500);
+      }
     }
+    mostrarEstado("compartilhado");
   } catch (err) {
-    document.getElementById("txt-fluxo").innerHTML = "ℹ️ Modo interativo ativo. Marque seu local no mapa.";
+    document.getElementById("comp-prato").textContent = "🕯️";
+    document.getElementById("comp-orixas").textContent = "Oferenda não encontrada";
+    document.getElementById("comp-texto").textContent = "Não conseguimos localizar esta oferenda. O link pode estar incorreto ou ela pode ter sido removida.";
+    document.getElementById("comp-elementos").innerHTML = "";
+    document.getElementById("comp-expira").textContent = "";
+    mostrarEstado("compartilhado");
   }
+}
+
+function irParaFormulario(){
+  history.replaceState(null, "", window.location.pathname);
+  if (markerCompartilhado) { mapaInstance.removeLayer(markerCompartilhado); markerCompartilhado=null; }
+  document.getElementById("loading-titulo").textContent = "Os guias estão recebendo seu pedido...";
+  document.getElementById("loading-sub").textContent = "A IA está gerando sua oferenda personalizada";
+  mostrarEstado("form");
 }
 
 function novoPedido(){
@@ -546,7 +588,11 @@ function novoPedido(){
   document.getElementById("txt-fluxo").style.borderLeftColor = "#e09b30";
   mostrarEstado("form");
 }
-window.addEventListener("DOMContentLoaded",function(){iniciarMapa();mostrarEstado("form")});
+window.addEventListener("DOMContentLoaded",function(){
+  const temId=new URLSearchParams(window.location.search).get("id");
+  iniciarMapa();
+  if(!temId) mostrarEstado("form");
+});
 </script>
 </body>
 </html>
