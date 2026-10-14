@@ -1,5 +1,5 @@
 /**
- * OFERENDA DIGITAL — Cloudflare Worker (Versão Limpa e Direta)
+ * OFERENDA DIGITAL — Cloudflare Worker (Versão Completa, Limpa e Estável)
  */
 
 const SYSTEM_PROMPT = `Você é um guardião espiritual respeitoso das tradições de Umbanda e Candomblé.
@@ -23,7 +23,7 @@ Responda SOMENTE em JSON puro, sem texto extra, sem markdown:
 
 function corsHeaders(env) {
   return {
-    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Origin": env.ALLOWED_ORIGIN || "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Content-Type": "application/json"
@@ -50,10 +50,11 @@ export default {
         }
 
         if (!env.GEMINI_API_KEY) {
-          return new Response(JSON.stringify({ error: "Chave da API do Gemini não configurada no Cloudflare" }), { status: 500, headers });
+          return new Response(JSON.stringify({ error: "GEMINI_API_KEY não configurada no Cloudflare" }), { status: 500, headers });
         }
 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${env.GEMINI_API_KEY}`;
+        // Endpoint estável v1 com gemini-pro
+        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${env.GEMINI_API_KEY}`;
         
         const geminiPayload = {
           contents: [
@@ -74,12 +75,12 @@ export default {
           body: JSON.stringify(geminiPayload)
         });
 
+        const data = await res.json();
+
         if (!res.ok) {
-          const errText = await res.text();
-          return new Response(JSON.stringify({ error: "Erro na API do Google", details: errText }), { status: 500, headers });
+          return new Response(JSON.stringify({ error: "Erro na API do Google", details: data }), { status: 500, headers });
         }
 
-        const data = await res.json();
         const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
         
         let clean = raw.replace(/```json/g, "").replace(/```/g, "").trim();
@@ -93,7 +94,7 @@ export default {
         return new Response(JSON.stringify(resultadoJson), { status: 200, headers });
       }
 
-      // Rota genérica para outras requisições
+      // Demais rotas em branco/sucesso para evitar quebras se acionadas pelo frontend
       return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
 
     } catch (err) {
