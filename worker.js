@@ -1,5 +1,5 @@
 /**
- * OFERENDA DIGITAL — Cloudflare Worker (Versão Completa, Limpa e Estável)
+ * OFERENDA DIGITAL — Cloudflare Worker (Versão Definitiva e Estável)
  */
 
 const SYSTEM_PROMPT = `Você é um guardião espiritual respeitoso das tradições de Umbanda e Candomblé.
@@ -21,9 +21,9 @@ Responda SOMENTE em JSON puro, sem texto extra, sem markdown:
   "elementos": ["elemento1", "elemento2", "elemento3"]
 }`;
 
-function corsHeaders(env) {
+function corsHeaders() {
   return {
-    "Access-Control-Allow-Origin": env.ALLOWED_ORIGIN || "*",
+    "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Content-Type": "application/json"
@@ -33,12 +33,11 @@ function corsHeaders(env) {
 export default {
   async fetch(request, env, ctx) {
     const { pathname } = new URL(request.url);
+    const headers = corsHeaders();
 
     if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: corsHeaders(env) });
+      return new Response(null, { status: 204, headers });
     }
-
-    const headers = corsHeaders(env);
 
     try {
       if (pathname === "/classificar" && request.method === "POST") {
@@ -94,7 +93,7 @@ export default {
         return new Response(JSON.stringify(resultadoJson), { status: 200, headers });
       }
 
-      // Demais rotas em branco/sucesso para evitar quebras se acionadas pelo frontend
+      // Rota padrão para salvamentos ou requisições gerais sem quebrar o site
       return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
 
     } catch (err) {
