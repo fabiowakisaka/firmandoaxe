@@ -92,55 +92,46 @@ function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), { status, headers });
 }
 
-// ─── GEMINI API COM MULTI-MODELOS E LOGS DETALHADOS ──────────────────
+// ─── GEMINI API COM URL OFICIAL ATUALIZADA ──────────────────
 async function classificarComGemini(texto, env) {
   if (!env.GEMINI_API_KEY) {
     throw new Error("GEMINI_API_KEY não está configurada nas variáveis de ambiente do Cloudflare.");
   }
 
-  const modelos = ["gemini-1.5-flash", "gemini-1.5-pro"];
-  let data = null;
-  let ultimoErro = "";
-
-  for (const modelo of modelos) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${env.GEMINI_API_KEY}`;
-    const body = {
-      contents: [{
-        parts: [{ text: `${SYSTEM_PROMPT}\n\nPedido do visitante: "${texto}"` }]
-      }],
-      generationConfig: {
-        temperature: 0.3,
-        maxOutputTokens: 512
-      }
-    };
-
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-      });
-
-      if (res.ok) {
-        data = await res.json();
-        break;
-      } else {
-        ultimoErro = await res.text();
-        console.error(`Erro com o modelo ${modelo}:`, ultimoErro);
-      }
-    } catch (e) {
-      ultimoErro = e.message;
-      console.error(`Exceção de rede com o modelo ${modelo}:`, e.message);
-    }
-  }
-
-  if (!data) {
-    throw new Error(`Falha em todos os modelos Gemini. Detalhe do último erro: ${ultimoErro}`);
-  }
-
-  const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-  let clean = raw.replace(/```json/g, "").replace(/```/g, "").trim();
+  // Utilizando o modelo oficial atualizado da Google v1beta
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${env.GEMINI_API_KEY}`;
   
+  const body = {
+    contents: [
+      {
+        role: "user",
+        parts: [
+          { text: `${SYSTEM_PROMPT}\n\nPedido do visitante: "${texto}"` }
+        ]
+      }
+    ],
+    generationConfig: {
+      temperature: 0.7,
+      maxOutputTokens: 512
+    }
+  };
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+
+  if (!res.ok) {
+    const erroTxt = await res.text();
+    console.error("Erro na API do Gemini:", erroTxt);
+    throw new Error(`Falha na API do Gemini (${res.status}): ${erroTxt}`);
+  }
+
+  const data = await res.json();
+  const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+  
+  let clean = raw.replace(/```json/g, "").replace(/```/g, "").trim();
   const inicioJson = clean.indexOf("{");
   const fimJson = clean.lastIndexOf("}");
   if (inicioJson !== -1 && fimJson !== -1) {
