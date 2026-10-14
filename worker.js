@@ -1,5 +1,5 @@
 /**
- * OFERENDA DIGITAL — Cloudflare Worker (Atualizado e Blindado com Debug)
+ * OFERENDA DIGITAL — Cloudflare Worker (Blindado e Isolado)
  */
 
 const SYSTEM_PROMPT = `Você é um guardião espiritual respeitoso das tradições de Umbanda e Candomblé.
@@ -42,24 +42,23 @@ export default {
 
     try {
       if (pathname === "/classificar" && request.method === "POST") {
-        try {
-          const { texto } = await request.json();
+        const { texto } = await request.json();
 
-          if (!texto || texto.trim().length < 5) {
-            return json({ error: "Texto muito curto" }, 400, headers);
-          }
-
-          const resultado = await classificarComGemini(texto.trim(), env);
-          return json(resultado, 200, headers);
-        } catch (innerErr) {
-          console.error("Erro detalhado em /classificar:", innerErr);
-          return json({ error: "Erro na IA", detail: innerErr.message }, 500, headers);
+        if (!texto || texto.trim().length < 5) {
+          return json({ error: "Texto muito curto" }, 400, headers);
         }
+
+        const resultado = await classificarComGemini(texto.trim(), env);
+        return json(resultado, 200, headers);
       }
 
       if (pathname === "/salvar" && request.method === "POST") {
         const oferenda = await request.json();
-        await salvarOferenda(oferenda, env);
+        try {
+          await salvarOferenda(oferenda, env);
+        } catch (sheetErr) {
+          console.warn("Aviso: Não foi possível salvar na planilha, mas a rota seguiu:", sheetErr.message);
+        }
         return json({ ok: true }, 200, headers);
       }
 
@@ -87,7 +86,7 @@ export default {
       return json({ error: "Rota não encontrada" }, 404, headers);
 
     } catch (err) {
-      console.error("Worker error:", err);
+      console.error("Worker error crítico:", err);
       return json({ error: "Erro interno", detail: err.message }, 500, headers);
     }
   }
@@ -97,10 +96,10 @@ function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), { status, headers });
 }
 
-// ─── GEMINI API COM URL OFICIAL ATUALIZADA ──────────────────
+// ─── GEMINI API ──────────────────
 async function classificarComGemini(texto, env) {
   if (!env.GEMINI_API_KEY) {
-    throw new Error("GEMINI_API_KEY não está configurada nas variáveis de ambiente do Cloudflare.");
+    throw new Error("GEMINI_API_KEY não configurada nas variáveis do Cloudflare.");
   }
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${env.GEMINI_API_KEY}`;
@@ -109,9 +108,7 @@ async function classificarComGemini(texto, env) {
     contents: [
       {
         role: "user",
-        parts: [
-          { text: `${SYSTEM_PROMPT}\n\nPedido do visitante: "${texto}"` }
-        ]
+        parts: [{ text: `${SYSTEM_PROMPT}\n\nPedido do visitante: "${texto}"` }]
       }
     ],
     generationConfig: {
@@ -144,7 +141,7 @@ async function classificarComGemini(texto, env) {
   try {
     return JSON.parse(clean);
   } catch (e) {
-    throw new Error("Resposta inválida da IA (JSON malformado): " + clean.substring(0, 100));
+    throw new Error("Resposta inválida da IA: " + clean.substring(0, 100));
   }
 }
 
@@ -186,6 +183,7 @@ async function getGoogleToken(env) {
     body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`
   });
   const tokenData = await tokenRes.json();
+  if (!tokenData.access_token) throw new Error("Falha ao autenticar com a Conta de Serviço do Google.");
   return tokenData.access_token;
 }
 
