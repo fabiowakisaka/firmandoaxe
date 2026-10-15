@@ -107,6 +107,31 @@ function limpar(v, max) {
   return String(v == null ? "" : v).slice(0, max);
 }
 
+
+// ─── MODELOS GEMINI (descobertos dinamicamente) ───────────────
+let cacheModelos = { lista: [], ate: 0 };
+
+async function modelosDisponiveis(env) {
+  if (cacheModelos.lista.length && Date.now() < cacheModelos.ate) return cacheModelos.lista;
+  try {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key=${env.GEMINI_API_KEY}`);
+    const d = await r.json();
+    if (!r.ok) return [];
+    const nums = n => (n.match(/\d+(\.\d+)?/) || ["0"])[0];
+    const lista = (d.models || [])
+      .filter(m => (m.supportedGenerationMethods || []).includes("generateContent"))
+      .map(m => m.name.replace("models/", ""))
+      .filter(n => /flash/.test(n) && !/image|tts|live|audio|embedding|robotics|computer|thinking|exp/.test(n))
+      .sort((a, b) => {
+        const lite = (/lite/.test(a) ? 1 : 0) - (/lite/.test(b) ? 1 : 0); // lite por último
+        if (lite) return lite;
+        return parseFloat(nums(b)) - parseFloat(nums(a));                  // versão mais nova primeiro
+      });
+    cacheModelos = { lista, ate: Date.now() + 3600 * 1000 };
+    return lista;
+  } catch (e) { return []; }
+}
+
 export default {
   async fetch(request, env, ctx) {
     const { pathname } = new URL(request.url);
@@ -129,9 +154,6 @@ export default {
           return new Response(JSON.stringify({ error: "GEMINI_API_KEY não configurada no Cloudflare" }), { status: 500, headers });
         }
 
-        // Modelos em ordem de preferência (podem ser trocados no Cloudflare via GEMINI_MODEL)
-        const modelos = [env.GEMINI_MODEL || "gemini-3.8-flash", "gemini-3.8-flash-lite", "gemini-3.1-flash"];
-
         const geminiPayload = {
           contents: [
             {
@@ -145,29 +167,35 @@ export default {
           }
         };
 
+        // Candidatos: GEMINI_MODEL (se definido) + modelos flash que a sua chave realmente enxerga
+        const descobertos = await modelosDisponiveis(env);
+        const candidatos = [...new Set([env.GEMINI_MODEL, ...descobertos].filter(Boolean))].slice(0, 4);
+        if (!candidatos.length) candidatos.push("gemini-3.8-flash");
+
+        const tentativas = [];
         let res, data;
-        for (const modelo of modelos) {
+        for (const modelo of candidatos) {
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${env.GEMINI_API_KEY}`;
-          // até 3 tentativas por modelo em caso de sobrecarga (503/429)
-          for (let tentativa = 0; tentativa < 3; tentativa++) {
+          for (let t = 0; t < 2; t++) {
             res = await fetch(url, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(geminiPayload)
             });
             data = await res.json();
+            tentativas.push({ modelo, status: res.status, msg: res.ok ? "ok" : (data?.error?.message || "").slice(0, 160) });
             if (res.ok) break;
             if (res.status === 503 || res.status === 429) {
-              await new Promise(r => setTimeout(r, 800 * (tentativa + 1)));
+              await new Promise(r => setTimeout(r, 800 * (t + 1)));
               continue;
             }
-            break; // outro erro (ex.: 404): passa para o próximo modelo
+            break; // 404 etc.: próximo modelo
           }
           if (res.ok) break;
         }
 
         if (!res.ok) {
-          return new Response(JSON.stringify({ error: "Erro na API do Google", details: data }), { status: 500, headers });
+          return new Response(JSON.stringify({ error: "Erro na API do Google", tentativas, details: data }), { status: 500, headers });
         }
 
         const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
